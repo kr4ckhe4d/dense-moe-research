@@ -82,7 +82,7 @@ def balanced_kmeans_partition(
     x = features.float()
     gen = torch.Generator(device="cpu").manual_seed(seed)
     centroids = x[torch.randperm(n, generator=gen)[:num_experts].to(x.device)].clone()
-    assign = torch.empty(n, dtype=torch.long, device=x.device)
+    assign: torch.Tensor | None = None
     for _ in range(iters):
         dist = torch.cdist(x, centroids)  # [n, E]
         order = torch.argsort(dist.flatten())
@@ -100,7 +100,7 @@ def balanced_kmeans_partition(
             if placed == n:
                 break
         new_assign = torch.tensor(placed_in, device=x.device)
-        if torch.equal(new_assign, assign):
+        if assign is not None and torch.equal(new_assign, assign):
             break
         assign = new_assign
         for e in range(num_experts):

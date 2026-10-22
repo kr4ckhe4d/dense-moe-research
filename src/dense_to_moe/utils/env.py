@@ -39,6 +39,7 @@ def environment() -> dict:
         "triton": triton.__version__,
         "transformers": transformers.__version__,
         "hip_visible_devices": os.environ.get("HIP_VISIBLE_DEVICES"),
+        "alloc_conf": os.environ.get("PYTORCH_HIP_ALLOC_CONF"),
         "gpus": gpus,
         "host": platform.node(),
     }
