@@ -117,7 +117,10 @@ src/dense_to_moe/
   calibration/data.py         licensed sources, hash-based disjoint splits, sequence packing
   calibration/collect.py      hook-based FFN-input capture (subsampled, CPU-offloaded)
   evaluation/metrics.py       rel err, cosine, MSE, utilization
+  evaluation/e2e.py           full-model switchable FFN modes (dense/oracle/static/neuron/sparse)
+  sparsity/blocks.py          Phase 3 block/neuron sparsity: oracle, gate, TEAL, WINA, greedy
   utils/                      env capture, HF range fetch, local checkpoint loading
 benchmarks/kernel_latency.py  single-layer latency (decode + prefill)
 scripts/collect_activations.py, scripts/oracle_analysis.py
+scripts/phase3_block_sweep.py, phase3_e2e_kld.py, phase3_speed_ceiling.py, phase3_summary.py
 ```

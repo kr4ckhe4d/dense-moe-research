@@ -18,8 +18,18 @@
 - Result: IQ4_XS + MTP 148 tok/s at KLD 0.018; oracle MoE 8/6 has KLD 0.117; at most ~1.2x
   from sparse FFN on top of IQ4_XS.
 
+## Done (Phase 3 milestone 1: predictive neuron sparsity), 2026-10-23
+Brief: `gpt-review.md`. Research + pre-registered gates: docs/phase3_research.md. Report:
+docs/phase3_findings.md (F5 in findings.md).
+- `sparsity/blocks.py` (SparseSpec, SparseFFN: oracle norm/contrib/greedy, gate, teal, wina) +
+  `Mode("sparse")` in e2e.py with per-layer mask unions; 64 new tests
+- Block sweep (32 layers x 10 block sizes x 6 budgets), full-model KLD of 18 variants on the
+  llama.cpp BF16 val base, speed ceilings on both GPUs (scripts/phase3_*.py)
+- Result: G1/G2 fail, G3 paper-only (+4-12%), MTP stretch fails (<= +0.3%). Recommendation: stop.
+- Found hipBLASLt bmm batch >= 65536 bug (F5a) and an autograd leak in cached weight statistics.
+
 ## Waiting on the user
-The decision on the next milestone (options in docs/roadmap.md).
+The decision on what follows Phase 3 (options in docs/roadmap.md).
 
 ## Next candidate experiments (cheapest first)
 1. Measure the real bar: Qwen3.5-9B GGUF at Q8_0 / Q6_K / Q4_K_M / IQ4_XS in llama.cpp (KLD vs BF16

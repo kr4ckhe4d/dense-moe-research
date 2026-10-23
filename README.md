@@ -41,8 +41,18 @@ RX 9070 XT (llama-bench tg128, MTP via `llama-server --spec-type draft-mtp`):
 Full numbers and methods: [docs/findings.md](docs/findings.md). Every command that was run, in
 order, with descriptions: [docs/writeup.md](docs/writeup.md).
 
-**In progress (Phase 3):** predictive, fine-grained neuron sparsity (Deja Vu / TEAL / CATS /
-WINA-style) instead of fixed experts.
+**Phase 3, predictive fine-grained neuron sparsity (Deja Vu / TEAL / CATS / WINA-style), doesn't
+pay off either.**
+- Quality only survives at single-neuron granularity: 8-neuron blocks already cost 6x
+  IQ4_XS's KLD, even with a perfect choice.
+- Training-free input sparsity (TEAL) at 75-90% of channels is nearly free in quality (KLD
+  0.0093-0.0011), but the gain is small:
+  - At most +4-12% single-token decode, even with an ideal kernel.
+  - About 0% with MTP: the verify step checks ~4 tokens, and their combined masks cover the
+    whole FFN.
+
+Report: [docs/phase3_findings.md](docs/phase3_findings.md). Pre-registered gates and literature
+review: [docs/phase3_research.md](docs/phase3_research.md).
 
 ## How the experiments fit together
 
@@ -96,9 +106,11 @@ flowchart TB
 - **Evaluation:** full-model KL divergence scored against llama.cpp's `--kl-divergence-base` files.
   This puts PyTorch sparse variants and GGUF quants in one table.
 - **llama.cpp benchmarks:** imatrix quantization, KLD, llama-bench and MTP throughput scripts.
-- **Two ROCm pitfalls with repro scripts:**
+- **ROCm pitfalls with repro scripts:**
   - `PYTORCH_HIP_ALLOC_CONF=expandable_segments:True` silently corrupts tensors on
     torch 2.14.1+rocm7.2 (`scripts/repro_expandable_segments.py`).
+  - hipBLASLt `torch.bmm` silently returns wrong values for batch index >= 65536
+    (`scripts/repro_bmm_batch_limit.py`).
   - The iGPU must be hidden or PyTorch segfaults on init.
 
 ## Hardware and software
@@ -137,6 +149,8 @@ benchmarks/gguf_mtp.sh 0 Q8_0 IQ4_XS && .venv/bin/python scripts/gguf_summary.py
 |---|---|
 | [docs/findings.md](docs/findings.md) | All measured results (F0 to F4) |
 | [docs/writeup.md](docs/writeup.md) | Result summary and a runbook of every command run |
+| [docs/phase3_findings.md](docs/phase3_findings.md) | Phase 3: block granularity, TEAL/WINA/CATS predictors, MTP union, speed ceilings |
+| [docs/phase3_research.md](docs/phase3_research.md) | Phase 3 literature (Deja Vu, PowerInfer, DSMoE, TEAL, WINA, BlockFFN, Prox) and gates |
 | [docs/research.md](docs/research.md) | Literature survey: MoE upcycling, MoEfication, CMoE, TEAL, CATS, Deja Vu |
 | [docs/architecture.md](docs/architecture.md) | Partitioning, routing, kernels, code map |
 | [docs/environment.md](docs/environment.md) | Hardware, ROCm and model inspection |

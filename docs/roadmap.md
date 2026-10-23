@@ -1,5 +1,23 @@
 # Roadmap
 
+## Status after Phase 3 milestone 1 (2026-10-23): predictive neuron sparsity (F5)
+
+| Gate | Result |
+|---|---|
+| G1: blocks of >= 8 neurons at <= 50% kept reach IQ4_XS quality (oracle) | **Fail.** B=8: KLD 0.115 |
+| G2: a deployable selector reaches IQ4_XS quality at <= 60% of FFN bytes | **Fail (narrow).** TEAL needs ~70% |
+| G3: single-token ceiling beats the dense quant ladder | **Paper pass only.** +4-12%, ideal kernel + re-layout + additivity assumed |
+| Stretch: beat IQ4_XS + MTP | **Fail.** <= +0.3%: 4-token mask unions cover the whole FFN |
+
+Recommendation: stop FFN-sparsity work on this model (`docs/phase3_findings.md` G). Remaining
+options, if any:
+1. **Close the project** with the Phase 1-3 negative results and the measured bar.
+2. **MTP tuning** (draft length, per-domain acceptance, R9700 runs): the only lever that moved
+   decode speed by more than 1.2x.
+3. **TEAL in llama.cpp without MTP** (transposed, output-dim-quantized FFN + column-sparse kernel):
+   at most +5-12%, multi-week. Measure quant+sparsity KLD additivity first (cheap).
+
+
 ## Status after milestone 1 (2026-10-22)
 
 | Gate | Question | Result |

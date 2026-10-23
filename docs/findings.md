@@ -240,3 +240,33 @@ a free router) buys **1.18x**, against MTP's lossless **1.67x** on the same file
 - Sparse FFN would also have to coexist with MTP: the verify step runs 2+ tokens per pass, and
   token-dependent sparsity loses part of its saving when the union of active experts or neurons
   across the batch is read.
+
+## F5. Phase 3: predictive neuron sparsity, block granularity, MTP union (2026-10-23)
+
+Full report: `docs/phase3_findings.md`. Raw data: `experiments/results/phase3/`.
+
+- **Phase 1 numbers reproduce exactly** (dense 0.00040, neuron 75% 0.00133, 50% 0.01030 KLD).
+- **Blocks destroy the per-neuron advantage**, even with a perfect choice. FFN rel. error at 50%
+  kept, mean of 32 layers: B=1 0.111, B=8 0.325, B=16 0.376, B=64 0.453, B=1536 0.577. Full model:
+  B=1 0.0104, B=8 0.115, B=16 0.168 KLD. Greedy reconstruction and k-means-clustered blocks improve
+  this by only 8-16%. No hot blocks: 0.5-1% of blocks are chosen by >90% of tokens at 50%.
+- **Training-free input sparsity (TEAL; WINA is identical here)** is the best deployable method:
+  KLD 0.0011 / 0.0093 / 0.0316 / 0.091 at 90 / 75 / 62.5 / 50% of x and h kept. It beats the
+  gate-only (CATS-like) predictor at every byte budget. The GGUF-quant-block-aligned variant
+  (32-channel groups) costs KLD 0.40 at 75%.
+- **MTP erases it.** The union of 4 consecutive tokens' masks (MTP verifies ~4 tokens per step)
+  reads 89-100% of the FFN at every budget tested, 99-100% at the budgets with acceptable quality.
+- **Speed ceilings** (llama.cpp decode minus skipped FFN bytes, ideal kernel, free mask): +4-12%
+  single-token at comparable quality (e.g. TEAL 75% on Q6_K, 78.6 vs 70.3 tok/s, if KLD adds), and
+  +0.0-0.3% on top of MTP. Even removing the whole FFN caps IQ4_XS at 118-141 tok/s, below IQ4_XS +
+  MTP's 148.
+- **Verdict:** gates G1 and G2 fail, G3 passes only on paper, MTP stretch fails. Stop investing in
+  FFN sparsity for this model.
+
+### F5a. Tooling hazard: hipBLASLt bmm returns garbage past batch 65535 (ROCm)
+On torch 2.14.1+rocm7.2, `torch.bmm` (hipBLASLt path) silently returns wrong values for every
+batch index >= 65536, on both GPUs. No error is raised. `torch.einsum("tnb,nbc,tnc->tn")` lowers to
+such a bmm when t*n > 65535, and it produced wrong block scores in the first sweep attempt.
+`TORCH_BLAS_PREFER_HIPBLASLT=0` (rocBLAS) is correct. Repro: `scripts/repro_bmm_batch_limit.py`.
+Fixed in `sparsity/blocks.py` (batch = number of blocks), with a GPU regression test. All
+Phase 1/2 batched matmuls have batch <= 20,000 and are unaffected.

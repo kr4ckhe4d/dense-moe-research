@@ -5,6 +5,7 @@
   oracle             E-expert partition, k experts per token picked by true output norm (upper bound)
   static             same k experts for every token, chosen on calibration data (structured pruning)
   neuron             top fraction of neurons per token by contribution (unstructured upper bound)
+  sparse             Phase 3 block sparsity, any `SparseSpec` (sparsity/blocks.py)
 All variants reuse the original weights, so one model load serves every configuration.
 """
 
@@ -17,14 +18,16 @@ import torch.nn.functional as F
 from torch import nn
 
 from dense_to_moe.partitioning.strategies import Partition
+from dense_to_moe.sparsity.blocks import SparseFFN, SparseSpec
 
 
 @dataclass(frozen=True)
 class Mode:
-    kind: str = "dense"  # dense | oracle | static | neuron
+    kind: str = "dense"  # dense | oracle | static | neuron | sparse
     E: int = 0
     k: int = 0
     keep: float = 1.0
+    spec: SparseSpec | None = None
 
 
 class SwitchableMLP(nn.Module):
@@ -35,6 +38,9 @@ class SwitchableMLP(nn.Module):
         self.partitions: dict[int, Partition] = {}
         self.static_sets: dict[tuple[int, int], torch.Tensor] = {}
         self.stats: list[float] = []  # optional per-forward relative error, for diagnostics
+        self.sparse = SparseFFN(mlp.gate_proj.weight, mlp.up_proj.weight, mlp.down_proj.weight)
+        self.record = False  # sparse mode: append per-forward mask statistics to mask_stats
+        self.mask_stats: list[dict] = []
 
     def intermediate(self, x: torch.Tensor) -> torch.Tensor:
         return self.mlp.act_fn(self.mlp.gate_proj(x)) * self.mlp.up_proj(x)
@@ -52,6 +58,14 @@ class SwitchableMLP(nn.Module):
         if m.kind == "dense":
             return self.mlp(x)
         shape = x.shape
+        if m.kind == "sparse":
+            y, info = self.sparse.forward(x.reshape(-1, shape[-1]), m.spec)
+            if self.record:
+                st = mask_statistics(info["mask"], shape[-2])
+                if "x_mask" in info:
+                    st.update({f"x_{k}": v for k, v in mask_statistics(info["x_mask"], shape[-2]).items()})
+                self.mask_stats.append(st)
+            return y.view(shape)
         h = self.intermediate(x.reshape(-1, shape[-1]))
         if m.kind == "neuron":
             score = h.abs() * self.mlp.down_proj.weight.norm(dim=0)
@@ -68,6 +82,19 @@ class SwitchableMLP(nn.Module):
                 raise ValueError(m.kind)
             y = out.gather(0, idx.unsqueeze(-1).expand(-1, -1, out.shape[-1])).sum(0)
         return y.view(shape)
+
+
+@torch.no_grad()
+def mask_statistics(mask: torch.Tensor, seq_len: int) -> dict[str, float]:
+    """Kept fraction, and the fraction kept by the union of two / four consecutive tokens (what a
+    batched MTP verify step of that width must read), for a [T, n] mask of one sequence."""
+    m = mask.view(-1, seq_len, mask.shape[-1])
+    out = {"kept": m.float().mean().item()}
+    for w in (2, 4):
+        t = (seq_len // w) * w
+        u = m[:, :t].view(m.shape[0], -1, w, m.shape[-1]).any(2)
+        out[f"union{w}"] = u.float().mean().item()
+    return out
 
 
 def wrap_model(model: nn.Module) -> list[SwitchableMLP]:
