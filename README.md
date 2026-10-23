@@ -144,3 +144,9 @@ benchmarks/gguf_mtp.sh 0 Q8_0 IQ4_XS && .venv/bin/python scripts/gguf_summary.py
 | [requirements.md](requirements.md) | The original research brief |
 
 `.ai/project.md` and `.ai/task.md` hold the state an AI agent needs to continue the work.
+
+## License
+
+Code and documentation in this repository: [MIT](LICENSE). The Qwen3.5-9B weights are not
+included and are covered by their own license, and the calibration text comes from the sources
+listed in `src/dense_to_moe/calibration/data.py` under their own licenses.

@@ -3,6 +3,8 @@ name = "dense-to-moe"
 version = "0.1.0"
 description = "Convert pretrained dense LLM FFNs into sparse Mixture-of-Experts and measure real inference speed"
 requires-python = ">=3.12,<3.13"
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = [
     "torch==2.14.1+rocm7.2",
     "triton-rocm",
