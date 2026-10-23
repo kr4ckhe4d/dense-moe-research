@@ -31,5 +31,7 @@ benchmarks/gguf_kld.sh base val && benchmarks/gguf_kld.sh score val IQ4_XS
 benchmarks/gguf_mtp.sh 0 Q8_0 IQ4_XS && .venv/bin/python scripts/gguf_summary.py
 ```
 
+**Write-up with every command run: `docs/writeup.md`.**
+
 Docs: `docs/environment.md`, `docs/research.md`, `docs/architecture.md`, `docs/findings.md`,
 `docs/roadmap.md`. Agent continuity: `.ai/project.md`, `.ai/task.md`.
