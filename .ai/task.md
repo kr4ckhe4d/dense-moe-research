@@ -34,6 +34,13 @@ docs/phase3_findings.md (F5 in findings.md).
 - Result: defaults (draft 3) are best within noise; domain spread 115-172 tok/s on IQ4_XS;
   probabilistic draft sampling helps slightly at temperature 0.7.
 
+## Done (MTP follow-up + offload milestone), 2026-10-23
+- MTP follow-up: editing with draft-mtp,ngram-mod 5x; long context, seeds, -np 4, 9070 XT.
+- Offload: benchmarks/offload_bench.py, offload_mtp_fit.py, build_27b_quants.sh;
+  scripts/offload_summary.py; docs/offload.md (F7).
+- 27B requants on /mnt/fast/models: Qwen3.8-27B-{IQ4_XS,Q3_K_M}-rq.gguf (~28 GB).
+  imatrix: cache/gguf/imatrix-27b-calib.gguf.
+
 ## Waiting on the user
 What follows (docs/roadmap.md).
 

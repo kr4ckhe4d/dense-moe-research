@@ -1,0 +1,12 @@
+Qwen3.8-27B-UD-Q6_K: chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS            Same top p
+Qwen3.8-27B-UD-Q6_K: Mean PPL(Q)                   :   6.789364 ±   0.073923
+Qwen3.8-27B-UD-Q6_K: Mean    KLD:   0.002317 ±   0.000043
+Qwen3.8-27B-UD-Q6_K: Same top p: 97.888 ± 0.064 %
+Qwen3.8-27B-IQ4_XS-rq: chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS            Same top p
+Qwen3.8-27B-IQ4_XS-rq: Mean PPL(Q)                   :   6.860425 ±   0.074953
+Qwen3.8-27B-IQ4_XS-rq: Mean    KLD:   0.018508 ±   0.000254
+Qwen3.8-27B-IQ4_XS-rq: Same top p: 94.010 ± 0.105 %
+Qwen3.8-27B-Q3_K_M-rq: chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS            Same top p
+Qwen3.8-27B-Q3_K_M-rq: Mean PPL(Q)                   :   7.078757 ±   0.078678
+Qwen3.8-27B-Q3_K_M-rq: Mean    KLD:   0.054206 ±   0.000656
+Qwen3.8-27B-Q3_K_M-rq: Same top p: 89.975 ± 0.133 %

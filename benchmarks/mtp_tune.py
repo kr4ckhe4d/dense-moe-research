@@ -87,6 +87,8 @@ def head_lines(path: Path, chars: int) -> str:
 def prompt_set(name: str) -> dict[str, str]:
     if name == "domains":
         return PROMPTS
+    if name == "short3":  # for slow (offloaded) configs: code, prose, json
+        return {k: PROMPTS[k] for k in ("code_python", "prose", "json")}
     if name == "longctx":  # llama.cpp C++ is ~3.37 chars/token for this tokenizer
         src = LLAMA / "src/llama-kv-cache.cpp"
         return {f"longctx_{k}k": f"```cpp\n{head_lines(src, int(k * 1000 * 3.37))}```\n\n{QUESTION}"
@@ -219,7 +221,7 @@ def main() -> None:
     ap.add_argument("--max-tokens", type=int, default=512)
     ap.add_argument("--temperature", type=float, default=0.0)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--prompt-set", default="domains", choices=["domains", "longctx", "edit", "pp"])
+    ap.add_argument("--prompt-set", default="domains", choices=["domains", "short3", "longctx", "edit", "pp"])
     ap.add_argument("--port", type=int, default=8199)
     ap.add_argument("--out", default=None)
     args = ap.parse_args()

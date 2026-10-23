@@ -1,0 +1,16 @@
+0.00.030.189 I srv  llama_server: initializing ...
+0.00.030.196 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.030.770 I srv  init_listene: The UI is disabled
+0.00.030.771 I srv  init_listene: Use --ui/--no-ui (or deprecated --webui/--no-webui) to enable/disable
+0.00.030.809 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.032.158 I srv    load_model: loading model '/mnt/fast/models/Qwen3.8-27B-UD-Q6_K.gguf'
+0.00.476.169 W common_fit_params: failed to fit params to free device memory: n_gpu_layers already set by user to 48, abort
+0.04.889.129 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 234.04 MiB on device 0: cudaMalloc failed: out of memory
+0.04.889.133 E ggml_gallocr_reserve_n_impl: failed to allocate ROCm0 buffer of size 245411840
+0.04.889.134 E graph_reserve: failed to allocate compute buffers
+0.04.900.580 E llama_init_from_model: failed to initialize the context: failed to allocate compute pp buffers
+0.04.900.584 E cmn  common_init_: failed to create context with model '/mnt/fast/models/Qwen3.8-27B-UD-Q6_K.gguf'
+0.04.900.587 E cmn  common_init_: failed to create context with model '/mnt/fast/models/Qwen3.8-27B-UD-Q6_K.gguf'
+0.04.900.590 E srv    load_model: failed to create_context with model '/mnt/fast/models/Qwen3.8-27B-UD-Q6_K.gguf'
+0.04.900.592 I srv    operator(): operator(): cleaning up before exit...
+0.04.900.850 E srv  llama_server: exiting due to model loading error

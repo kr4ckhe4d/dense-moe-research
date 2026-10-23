@@ -293,3 +293,19 @@ Full report: `docs/mtp_tuning.md`. 660 generations over six domains, 512 tokens 
   - With 4 concurrent requests it gives 1.25x aggregate.
   - Probabilistic drafts are +2-3% at temperature 0.7 (3 seeds).
   - The 9070 XT matches the R9700 within 2%.
+
+## F7. Offloading to system RAM: what to do on smaller GPUs (2026-10-23)
+
+Full report: `docs/offload.md`. Simulated 4-16 GB budgets on the RX 9070 XT, DDR5-6000, Qwen3.5-9B
+and Qwen3.8-27B.
+- Each GiB of weights in RAM costs 15-20 ms per token (52-70 GB/s), ~10x a GiB in VRAM. Whole-layer
+  offload is equal or 3-12% faster than FFN-only offload.
+- Quantizing until the model fits beats offloading a better quant:
+  - 9B on 6 GB: IQ4_XS on the GPU 136 tok/s vs Q6_K partly in RAM 48.
+  - 27B on 16 GB: IQ4_XS 69 vs UD-Q6_K 18 (with MTP).
+- MTP gains more when weights are in RAM: 1.7-2.5x at the same budget (lowering -ngl 2-3 layers
+  for the draft context), vs 1.5-1.6x fully on the GPU.
+- CPU-side activation sparsity (TEAL on the RAM-resident FFN rows) has a ceiling of +5-9% (90% of
+  rows read) / +14-26% (75%) without MTP, and ~0 with MTP (4-token union). Not worth building.
+- New 27B quants (requantized from Q8_0, imatrix from calib), KLD vs Q8_0 on wikitext-2:
+  UD-Q6_K 0.0023, IQ4_XS-rq 0.0185, Q3_K_M-rq 0.054.

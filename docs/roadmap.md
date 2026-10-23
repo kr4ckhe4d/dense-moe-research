@@ -1,5 +1,18 @@
 # Roadmap
 
+## Status after the offload milestone (2026-10-23, F7)
+
+For limited-VRAM users: MTP always (1.7-2.5x when offloaded), quantize until it fits, offload
+whole layers when nothing fits. CPU-side activation sparsity is capped at +14-26% without MTP and
+~0 with it. See `docs/offload.md`.
+
+Open:
+- Real smaller GPUs (lower VRAM bandwidth).
+- Slower host RAM (DDR4, single channel).
+- Prefill-heavy workloads under offload.
+- MTP + n-gram for editing under offload.
+
+
 ## Status after MTP tuning (2026-10-23, F6)
 
 MTP defaults are already near-optimal on the R9700 (tuning: <= +2% except BF16 +5%). Recommended

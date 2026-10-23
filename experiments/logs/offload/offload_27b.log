@@ -1,0 +1,24 @@
+Qwen3.8-27B-Q8_0       layers    8 GiB: k= 16 GPU  7.24 GiB, RAM weights 18.84 GiB, pp512   420.2, tg128   2.72
+Qwen3.8-27B-Q8_0       ffn       8 GiB: does not fit
+Qwen3.8-27B-Q8_0       layers   12 GiB: k= 27 GPU 11.50 GiB, RAM weights 14.70 GiB, pp512   481.9, tg128   3.34
+Qwen3.8-27B-Q8_0       ffn      12 GiB: k= 57 GPU 11.49 GiB, RAM weights 15.08 GiB, pp512   521.3, tg128   3.12
+Qwen3.8-27B-Q8_0       layers   16 GiB: k= 37 GPU 15.36 GiB, RAM weights 10.93 GiB, pp512   532.4, tg128   4.14
+Qwen3.8-27B-Q8_0       ffn      16 GiB: k= 42 GPU 15.46 GiB, RAM weights 11.11 GiB, pp512   458.2, tg128   3.92
+Qwen3.8-27B-UD-Q6_K    layers    8 GiB: k= 20 GPU  7.29 GiB, RAM weights 12.63 GiB, pp512   454.3, tg128   3.86
+Qwen3.8-27B-UD-Q6_K    ffn       8 GiB: does not fit
+Qwen3.8-27B-UD-Q6_K    layers   12 GiB: k= 34 GPU 11.36 GiB, RAM weights  8.69 GiB, pp512   537.0, tg128   5.23
+Qwen3.8-27B-UD-Q6_K    ffn      12 GiB: k= 47 GPU 11.48 GiB, RAM weights  8.89 GiB, pp512   562.9, tg128   5.14
+Qwen3.8-27B-UD-Q6_K    layers   16 GiB: k= 48 GPU 15.44 GiB, RAM weights  4.76 GiB, pp512   657.3, tg128   8.05
+Qwen3.8-27B-UD-Q6_K    ffn      16 GiB: k= 27 GPU 15.39 GiB, RAM weights  4.98 GiB, pp512   670.4, tg128   7.83
+Qwen3.8-27B-IQ4_XS-rq  layers    8 GiB: k= 31 GPU  7.47 GiB, RAM weights  6.81 GiB, pp512   760.3, tg128   6.60
+Qwen3.8-27B-IQ4_XS-rq  ffn       8 GiB: k= 54 GPU  7.47 GiB, RAM weights  7.14 GiB, pp512   820.1, tg128   6.24
+Qwen3.8-27B-IQ4_XS-rq  layers   12 GiB: k= 50 GPU 11.34 GiB, RAM weights  3.11 GiB, pp512  1017.1, tg128  11.56
+Qwen3.8-27B-IQ4_XS-rq  ffn      12 GiB: k= 24 GPU 11.44 GiB, RAM weights  3.18 GiB, pp512  1073.1, tg128  11.30
+Qwen3.8-27B-IQ4_XS-rq  layers   16 GiB: k= 66 GPU 14.62 GiB, RAM weights  0.20 GiB, pp512  1396.9, tg128  32.41
+Qwen3.8-27B-IQ4_XS-rq  ffn      16 GiB: k=  0 GPU 14.62 GiB, RAM weights  0.00 GiB, pp512  1397.6, tg128  32.40
+Qwen3.8-27B-Q3_K_M-rq  layers    8 GiB: k= 35 GPU  7.47 GiB, RAM weights  5.31 GiB, pp512   734.8, tg128   7.96
+Qwen3.8-27B-Q3_K_M-rq  ffn       8 GiB: k= 47 GPU  7.49 GiB, RAM weights  5.59 GiB, pp512   776.2, tg128   7.54
+Qwen3.8-27B-Q3_K_M-rq  layers   12 GiB: k= 57 GPU 11.41 GiB, RAM weights  1.58 GiB, pp512   990.2, tg128  16.91
+Qwen3.8-27B-Q3_K_M-rq  ffn      12 GiB: k= 13 GPU 11.50 GiB, RAM weights  1.58 GiB, pp512  1020.0, tg128  16.81
+Qwen3.8-27B-Q3_K_M-rq  layers   16 GiB: k= 66 GPU 13.08 GiB, RAM weights  0.19 GiB, pp512  1153.8, tg128  33.33
+Qwen3.8-27B-Q3_K_M-rq  ffn      16 GiB: k=  0 GPU 13.08 GiB, RAM weights  0.00 GiB, pp512  1151.7, tg128  33.31

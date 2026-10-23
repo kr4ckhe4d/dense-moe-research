@@ -1,0 +1,18 @@
+Qwen3.5-9B-Q8_0        layers    4 GiB: k= 10 GPU  3.34 GiB, RAM weights  5.14 GiB, pp512  1484.4, tg128   9.36
+Qwen3.5-9B-Q8_0        ffn       4 GiB: does not fit
+Qwen3.5-9B-Q8_0        layers    6 GiB: k= 19 GPU  5.36 GiB, RAM weights  3.22 GiB, pp512  1975.5, tg128  13.54
+Qwen3.5-9B-Q8_0        ffn       6 GiB: k= 22 GPU  5.43 GiB, RAM weights  3.29 GiB, pp512  2127.1, tg128  13.07
+Qwen3.5-9B-Q8_0        layers    8 GiB: k= 28 GPU  7.37 GiB, RAM weights  1.29 GiB, pp512  2969.1, tg128  24.89
+Qwen3.5-9B-Q8_0        ffn       8 GiB: k=  9 GPU  7.37 GiB, RAM weights  1.34 GiB, pp512  3072.6, tg128  24.10
+Qwen3.5-9B-Q6_K        layers    4 GiB: k= 14 GPU  3.42 GiB, RAM weights  3.31 GiB, pp512  1389.2, tg128  13.86
+Qwen3.5-9B-Q6_K        ffn       4 GiB: k= 30 GPU  3.46 GiB, RAM weights  3.46 GiB, pp512  1440.9, tg128  12.70
+Qwen3.5-9B-Q6_K        layers    6 GiB: k= 25 GPU  5.34 GiB, RAM weights  1.49 GiB, pp512  1851.9, tg128  24.46
+Qwen3.5-9B-Q6_K        ffn       6 GiB: k= 13 GPU  5.43 GiB, RAM weights  1.50 GiB, pp512  1914.7, tg128  23.58
+Qwen3.5-9B-Q6_K        layers    8 GiB: k= 34 GPU  6.93 GiB, RAM weights  0.17 GiB, pp512  2494.3, tg128  70.18
+Qwen3.5-9B-Q6_K        ffn       8 GiB: k=  0 GPU  6.93 GiB, RAM weights  0.00 GiB, pp512  2483.4, tg128  70.13
+Qwen3.5-9B-IQ4_XS      layers    4 GiB: k= 20 GPU  3.50 GiB, RAM weights  1.56 GiB, pp512  2581.7, tg128  24.60
+Qwen3.5-9B-IQ4_XS      ffn       4 GiB: k= 23 GPU  3.47 GiB, RAM weights  1.72 GiB, pp512  2841.6, tg128  21.46
+Qwen3.5-9B-IQ4_XS      layers    6 GiB: k= 34 GPU  5.18 GiB, RAM weights  0.11 GiB, pp512  4370.2, tg128  89.33
+Qwen3.5-9B-IQ4_XS      ffn       6 GiB: k=  0 GPU  5.18 GiB, RAM weights  0.00 GiB, pp512  4331.0, tg128  89.39
+Qwen3.5-9B-IQ4_XS      layers    8 GiB: k= 34 GPU  5.18 GiB, RAM weights  0.11 GiB, pp512  4354.6, tg128  89.39
+Qwen3.5-9B-IQ4_XS      ffn       8 GiB: k=  0 GPU  5.18 GiB, RAM weights  0.00 GiB, pp512  4358.9, tg128  89.41

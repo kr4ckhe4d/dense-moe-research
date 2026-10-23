@@ -1,0 +1,175 @@
+0.00.447.570 W model has unused tensor blk.64.attn_norm.weight (size = 20480 bytes) -- ignoring
+0.00.447.574 W model has unused tensor blk.64.post_attention_norm.weight (size = 20480 bytes) -- ignoring
+0.00.447.578 W model has unused tensor blk.64.attn_q.weight (size = 66846720 bytes) -- ignoring
+0.00.447.580 W model has unused tensor blk.64.attn_k.weight (size = 5570560 bytes) -- ignoring
+0.00.447.581 W model has unused tensor blk.64.attn_v.weight (size = 5570560 bytes) -- ignoring
+0.00.447.586 W model has unused tensor blk.64.attn_output.weight (size = 33423360 bytes) -- ignoring
+0.00.447.587 W model has unused tensor blk.64.attn_q_norm.weight (size = 1024 bytes) -- ignoring
+0.00.447.589 W model has unused tensor blk.64.attn_k_norm.weight (size = 1024 bytes) -- ignoring
+0.00.447.590 W model has unused tensor blk.64.ffn_gate.weight (size = 94699520 bytes) -- ignoring
+0.00.447.591 W model has unused tensor blk.64.ffn_down.weight (size = 94699520 bytes) -- ignoring
+0.00.447.593 W model has unused tensor blk.64.ffn_up.weight (size = 94699520 bytes) -- ignoring
+0.00.447.595 W model has unused tensor blk.64.nextn.eh_proj.weight (size = 55705600 bytes) -- ignoring
+0.00.447.597 W model has unused tensor blk.64.nextn.enorm.weight (size = 20480 bytes) -- ignoring
+0.00.447.598 W model has unused tensor blk.64.nextn.hnorm.weight (size = 20480 bytes) -- ignoring
+0.00.447.602 W model has unused tensor blk.64.nextn.shared_head_norm.weight (size = 20480 bytes) -- ignoring
+0.40.533.645 I cmn          init: llama threadpool init, n_threads = 8
+0.40.533.672 I 
+0.40.534.325 I system_info: n_threads = 8 (n_threads_batch = 8) / 16 | ROCm : NO_VMM = 1 | FA_QUANTS = q4_0-q4_0,q8_0-q8_0,f16-f16,bf16-bf16 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX_VNNI = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | AVX512 = 1 | AVX512_VBMI = 1 | AVX512_VNNI = 1 | AVX512_BF16 = 1 | LLAMAFILE = 1 | OPENMP = 1 | REPACK = 1 | 
+0.40.534.332 I compute_imatrix: tokenizing the input ..
+0.40.718.392 I compute_imatrix: tokenization took 184.058 ms
+0.40.718.415 I compute_imatrix: computing over 295 chunks, n_ctx=512, batch_size=2048, n_seq=4
+0.45.098.632 I compute_imatrix: 4.38 seconds per pass - ETA 5.38 minutes
+[1]3.0125,[2]2.9967,[3]3.0265,[4]2.6635,[5]2.7646,[6]2.4427,[7]2.3094,[8]2.1041,0.50.313.465 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+0.50.313.620 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+0.50.313.718 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+0.50.314.116 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[9]2.1292,[10]2.0616,[11]2.0331,[12]2.0541,[13]2.1226,[14]2.1114,[15]2.1072,[16]2.0855,1.00.566.356 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+1.00.566.511 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+1.00.566.610 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+1.00.567.011 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[17]2.0468,[18]2.0388,[19]2.0130,[20]1.9742,[21]1.9155,[22]1.8912,[23]1.9047,[24]1.9051,[25]1.8981,[26]1.9468,[27]1.9336,[28]1.9063,1.11.208.421 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+1.11.208.576 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+1.11.208.674 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+1.11.209.069 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[29]1.9289,[30]1.8981,[31]1.9143,[32]1.9287,[33]1.9565,[34]1.9401,[35]1.9378,[36]1.9764,1.21.480.292 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+1.21.480.452 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+1.21.480.556 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+1.21.480.967 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[37]1.9575,[38]1.9460,[39]1.9294,[40]1.9133,[41]1.9407,[42]1.9559,[43]1.9655,[44]1.9669,[45]1.9510,[46]1.9429,[47]1.9517,[48]1.9611,1.32.599.711 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+1.32.599.869 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+1.32.599.970 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+1.32.600.378 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[49]1.9735,[50]1.9907,[51]1.9792,[52]1.9659,[53]1.9573,[54]1.9398,[55]1.9327,[56]1.9200,1.42.861.145 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+1.42.861.306 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+1.42.861.408 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+1.42.861.820 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[57]1.9106,[58]1.9067,[59]1.9040,[60]1.9097,[61]1.9006,[62]1.8940,[63]1.8790,[64]1.8763,[65]1.8668,[66]1.8584,[67]1.8487,[68]1.8409,1.53.194.679 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+1.53.194.834 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+1.53.194.933 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+1.53.195.332 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[69]1.8330,[70]1.8272,[71]1.8271,[72]1.8482,[73]1.8507,[74]1.8479,[75]1.8496,[76]1.8500,2.03.388.099 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+2.03.388.253 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+2.03.388.352 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+2.03.388.748 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[77]1.8497,[78]1.8567,[79]1.8557,[80]1.8548,[81]1.8603,[82]1.8621,[83]1.8696,[84]1.8622,[85]1.8539,[86]1.8476,[87]1.8376,[88]1.8481,2.13.601.870 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+2.13.602.025 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+2.13.602.126 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+2.13.602.524 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[89]1.8429,[90]1.8339,[91]1.8329,[92]1.8330,[93]1.8304,[94]1.8222,[95]1.8234,[96]1.8164,2.23.818.844 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+2.23.819.003 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+2.23.819.106 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+2.23.819.514 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[97]1.8278,[98]1.8585,[99]1.8937,[100]1.9153,[101]1.9299,[102]1.9402,[103]1.9558,[104]1.9728,[105]1.9879,[106]2.0086,[107]2.0527,[108]2.0609,2.34.196.799 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+2.34.196.954 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+2.34.197.053 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+2.34.197.453 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[109]2.0754,[110]2.0999,[111]2.1364,[112]2.1668,[113]2.1952,[114]2.2204,[115]2.2449,[116]2.2734,2.44.423.019 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+2.44.423.176 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+2.44.423.275 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+2.44.423.673 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[117]2.2886,[118]2.2945,[119]2.3143,[120]2.3359,[121]2.3564,[122]2.3690,[123]2.3809,[124]2.4020,[125]2.4071,[126]2.4239,[127]2.4421,[128]2.4510,2.54.708.353 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+2.54.708.513 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+2.54.708.615 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+2.54.709.026 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[129]2.4640,[130]2.4895,[131]2.5194,[132]2.5347,[133]2.5389,[134]2.5352,[135]2.5444,[136]2.5406,3.04.938.027 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+3.04.938.184 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+3.04.938.282 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+3.04.938.682 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[137]2.5670,[138]2.5739,[139]2.5915,[140]2.6048,[141]2.6274,[142]2.6501,[143]2.6665,[144]2.6785,[145]2.6971,[146]2.7267,[147]2.7624,[148]2.7757,3.15.339.407 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+3.15.339.561 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+3.15.339.658 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+3.15.340.054 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[149]2.7793,[150]2.7720,[151]2.7640,[152]2.7571,[153]2.7542,[154]2.7502,[155]2.7423,[156]2.7375,3.25.508.656 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+3.25.508.815 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+3.25.508.916 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+3.25.509.329 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[157]2.7339,[158]2.7295,[159]2.7280,[160]2.7238,[161]2.7197,[162]2.7102,[163]2.7045,[164]2.6978,[165]2.6922,[166]2.6898,[167]2.6896,[168]2.6872,3.35.760.754 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+3.35.760.909 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+3.35.761.008 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+3.35.761.407 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[169]2.6836,[170]2.6804,[171]2.6807,[172]2.6771,[173]2.6707,[174]2.6598,[175]2.6607,[176]2.6548,3.45.986.043 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+3.45.986.200 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+3.45.986.299 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+3.45.986.696 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[177]2.6501,[178]2.6463,[179]2.6437,[180]2.6433,[181]2.6404,[182]2.6338,[183]2.6326,[184]2.6287,[185]2.6244,[186]2.6182,[187]2.6193,[188]2.6169,3.56.299.095 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+3.56.299.253 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+3.56.299.353 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+3.56.299.761 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[189]2.6108,[190]2.6063,[191]2.6014,[192]2.6019,[193]2.6036,[194]2.5989,[195]2.5957,[196]2.5888,4.06.468.357 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+4.06.468.515 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+4.06.468.615 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+4.06.469.019 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[197]2.5848,[198]2.5863,[199]2.5926,[200]2.6003,[201]2.6071,[202]2.6187,[203]2.6331,[204]2.6492,[205]2.6581,[206]2.6705,[207]2.6783,[208]2.6865,4.16.747.162 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+4.16.747.318 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+4.16.747.416 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+4.16.747.815 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[209]2.6999,[210]2.7094,[211]2.7170,[212]2.7247,[213]2.7308,[214]2.7335,[215]2.7460,[216]2.7604,4.26.960.707 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+4.26.960.865 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+4.26.960.963 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+4.26.961.370 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[217]2.7739,[218]2.7820,[219]2.7917,[220]2.8031,[221]2.8152,[222]2.8287,[223]2.8403,[224]2.8520,[225]2.8594,[226]2.8737,[227]2.8922,[228]2.9082,4.37.201.564 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+4.37.201.719 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+4.37.201.818 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+4.37.202.218 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[229]2.9222,[230]2.9445,[231]2.9573,[232]2.9810,[233]2.9978,[234]3.0036,[235]3.0191,[236]3.0325,4.47.379.625 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+4.47.379.783 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+4.47.379.882 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+4.47.380.289 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[237]3.0485,[238]3.0610,[239]3.0701,[240]3.0844,[241]3.0990,[242]3.1094,[243]3.1102,[244]3.1177,[245]3.1275,[246]3.1435,[247]3.1442,[248]3.1409,4.57.629.462 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+4.57.629.616 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+4.57.629.714 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+4.57.630.112 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[249]3.1430,[250]3.1470,[251]3.1476,[252]3.1454,[253]3.1486,[254]3.1594,[255]3.1594,[256]3.1609,5.07.837.709 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+5.07.837.868 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+5.07.837.970 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+5.07.838.381 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[257]3.1583,[258]3.1641,[259]3.1702,[260]3.1741,[261]3.1660,[262]3.1710,[263]3.1779,[264]3.1819,[265]3.1874,[266]3.1928,[267]3.1972,[268]3.1989,5.18.146.734 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+5.18.146.894 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+5.18.146.996 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+5.18.147.407 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[269]3.1995,[270]3.2111,[271]3.2226,[272]3.2396,[273]3.2435,[274]3.2555,[275]3.2572,[276]3.2619,5.28.399.347 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+5.28.399.504 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+5.28.399.604 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+5.28.400.008 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[277]3.2667,[278]3.2683,[279]3.2661,[280]3.2619,[281]3.2655,[282]3.2682,[283]3.2685,[284]3.2733,[285]3.2808,[286]3.2817,[287]3.2881,[288]3.2935,5.38.669.907 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+5.38.670.060 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+5.38.670.164 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+5.38.670.559 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+[289]3.2988,[290]3.3050,[291]3.3129,[292]3.3222,[293]3.3302,[294]3.3358,[295]3.3368,
+Final estimate: PPL = 3.3368 +/- 0.02656
+5.44.911.994 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_output.weight'
+5.44.912.153 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_q.weight'
+5.44.912.252 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_v.weight'
+5.44.912.654 W compute_tensor_statistics: no preceding-layer tensor for 'blk.3.attn_k.weight'
+
+
