@@ -1,6 +1,62 @@
 # Architecture
 
+## Experiment pipeline
+
+Calibration data fits everything (partitions, imatrix). Every quality number is measured on
+held-out validation text, against one llama.cpp BF16 reference, so PyTorch sparse variants and
+GGUF quants land in the same table.
+
+```mermaid
+flowchart TB
+    HF[("Qwen3.5-9B · HF checkpoint · BF16")]
+    SRC["6 domains: prose, math, instructions, C++, Python, JSON"] --> SPLIT{"hash split per document<br/>(calibration/data.py)"}
+    SPLIT --> CAL["calib 60%"]
+    SPLIT --> VAL["val 10%"]
+
+    subgraph torch["PyTorch + Triton on ROCm"]
+        direction TB
+        ACT["FFN-input activations, 32 layers<br/>collect_activations.py"] --> PART["fit partitions<br/>contiguous / random / k-means"]
+        PART --> ORA["per-layer oracle bound<br/>oracle_analysis.py"]
+        PART --> SPARSE["full model with sparse FFNs<br/>oracle MoE, per-neuron"]
+        KER["Triton decode kernels<br/>kernel_latency.py"]
+    end
+
+    subgraph llama["llama.cpp on HIP"]
+        direction TB
+        GGUF["BF16 GGUF"] --> IMAT["imatrix"] --> QUANTS["Q8_0 … Q3_K_M<br/>FFN-only proxies"]
+        GGUF --> BASE["KLD base file<br/>BF16 log-probs"]
+        QUANTS --> BENCH["llama-bench · llama-server + MTP"]
+    end
+
+    HF --> ACT & SPARSE & KER & GGUF
+    CAL --> ACT
+    CAL --> IMAT
+    VAL --> ORA
+    VAL --> BASE
+    BASE --> SCORE{{"one scorer: same tokens, same KL formula<br/>sparse_kld_vs_gguf.py · gguf_kld.sh"}}
+    SPARSE --> SCORE
+    QUANTS --> SCORE
+    SCORE & BENCH & KER & ORA --> FIND["docs/findings.md: quality vs speed"]
+```
+
 ## Conversion
+
+One SwiGLU FFN split into E experts along the intermediate dimension. With every expert selected
+and unit weights, the sum is the dense output exactly.
+
+```mermaid
+flowchart LR
+    X["x [4096]"] --> R["router<br/>oracle or learned"]
+    R -- "top-k expert ids,<br/>read on device" --> RUN
+    X --> RUN
+    subgraph EXP["E experts = disjoint neuron groups G_e, m = 12288 / E each"]
+        direction TB
+        E1["expert e<br/>W_gate[G_e], W_up[G_e]: m × 4096<br/>W_down[:, G_e]: 4096 × m"]
+        E2["…"]
+    end
+    EXP -.- RUN["only the k selected experts run<br/>y_e = W_down[:, G_e] · (silu(W_gate[G_e] x) ⊙ W_up[G_e] x)"]
+    RUN --> SUM(("Σ g_e · y_e")) --> Y["y [4096]"]
+```
 
 Each Qwen3.5 SwiGLU FFN (`gate_proj`, `up_proj`: [12288, 4096], `down_proj`: [4096, 12288],
 no biases) is split along the intermediate dimension by a `Partition`: E disjoint,

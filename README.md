@@ -44,6 +44,45 @@ order, with descriptions: [docs/writeup.md](docs/writeup.md).
 **In progress (Phase 3):** predictive, fine-grained neuron sparsity (Deja Vu / TEAL / CATS /
 WINA-style) instead of fixed experts.
 
+## How the experiments fit together
+
+Calibration data fits everything; every quality number is scored on held-out text against one
+llama.cpp BF16 reference, so PyTorch sparse variants and GGUF quants share one table. Details and
+the FFN-to-experts diagram: [docs/architecture.md](docs/architecture.md).
+
+```mermaid
+flowchart TB
+    HF[("Qwen3.5-9B · HF checkpoint · BF16")]
+    SRC["6 domains: prose, math, instructions, C++, Python, JSON"] --> SPLIT{"hash split per document<br/>(calibration/data.py)"}
+    SPLIT --> CAL["calib 60%"]
+    SPLIT --> VAL["val 10%"]
+
+    subgraph torch["PyTorch + Triton on ROCm"]
+        direction TB
+        ACT["FFN-input activations, 32 layers<br/>collect_activations.py"] --> PART["fit partitions<br/>contiguous / random / k-means"]
+        PART --> ORA["per-layer oracle bound<br/>oracle_analysis.py"]
+        PART --> SPARSE["full model with sparse FFNs<br/>oracle MoE, per-neuron"]
+        KER["Triton decode kernels<br/>kernel_latency.py"]
+    end
+
+    subgraph llama["llama.cpp on HIP"]
+        direction TB
+        GGUF["BF16 GGUF"] --> IMAT["imatrix"] --> QUANTS["Q8_0 … Q3_K_M<br/>FFN-only proxies"]
+        GGUF --> BASE["KLD base file<br/>BF16 log-probs"]
+        QUANTS --> BENCH["llama-bench · llama-server + MTP"]
+    end
+
+    HF --> ACT & SPARSE & KER & GGUF
+    CAL --> ACT
+    CAL --> IMAT
+    VAL --> ORA
+    VAL --> BASE
+    BASE --> SCORE{{"one scorer: same tokens, same KL formula<br/>sparse_kld_vs_gguf.py · gguf_kld.sh"}}
+    SPARSE --> SCORE
+    QUANTS --> SCORE
+    SCORE & BENCH & KER & ORA --> FIND["docs/findings.md: quality vs speed"]
+```
+
 ## What's in the repo
 
 - **Exact dense-to-MoE partitioning** of SwiGLU FFNs (contiguous, random, balanced k-means
