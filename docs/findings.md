@@ -286,3 +286,10 @@ Full report: `docs/mtp_tuning.md`. 660 generations over six domains, 512 tokens 
   than greedy drafts there (one seed).
 - MTP output is deterministic but not token-identical to plain decoding (batched-verify numerics).
   Quality is the quant's.
+- Follow-up (docs/mtp_tuning.md):
+  - On repetitive editing (returning a whole file with small changes), `draft-mtp,ngram-mod` gives
+    5.0x over plain decoding (Q6_K 353, IQ4_XS 451 tok/s), vs ~2x for MTP alone.
+  - MTP keeps ~1.5x at 28k tokens of context.
+  - With 4 concurrent requests it gives 1.25x aggregate.
+  - Probabilistic drafts are +2-3% at temperature 0.7 (3 seeds).
+  - The 9070 XT matches the R9700 within 2%.

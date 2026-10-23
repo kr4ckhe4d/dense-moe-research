@@ -57,6 +57,8 @@ review: [docs/phase3_research.md](docs/phase3_research.md).
 **MTP tuning on the R9700:** llama.cpp's defaults are already near-optimal.
 - Six-domain averages: Q6_K + MTP 114 tok/s, IQ4_XS + MTP 136 tok/s (BF16 without MTP: 34 tok/s).
 - The kind of text matters more than any setting: 115 tok/s on prose vs 172 on JSON.
+- For editing workloads that copy their input, adding n-gram drafting (`--spec-type draft-mtp,ngram-mod`)
+  reaches 5x plain decoding (IQ4_XS 451 tok/s on the R9700).
 - Details: [docs/mtp_tuning.md](docs/mtp_tuning.md).
 
 ## How the experiments fit together

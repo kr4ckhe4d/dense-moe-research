@@ -29,6 +29,8 @@ def label(c: dict) -> str:
         s += f" p_min={c['p_min']}"
     if c.get("extra"):
         s += " " + " ".join(c["extra"])
+    if c.get("np", 1) > 1:
+        s += f" np={c['np']}"
     return s
 
 
@@ -42,8 +44,11 @@ def main() -> None:
     temps = sorted({r["temperature"] for r in rows})
     prompts = list(dict.fromkeys(r["prompt"] for r in rows))
     print(f"# MTP tuning: {path.name}\n")
-    print(f"{len(rows)} generations, {rows[0]['max_tokens']} tokens each, GPU {rows[0]['gpu']}. "
-          "Speed is the harmonic mean over prompts; acceptance = accepted / drafted.\n")
+    seeds = sorted({r.get("seed", 0) for r in rows})
+    print(f"{len(rows)} generations (prompt set {rows[0].get('prompt_set', 'domains')}), up to "
+          f"{rows[0]['max_tokens']} tokens each, GPU {rows[0]['gpu']}, seeds {seeds}. Speed is the "
+          "harmonic mean over prompts (and seeds); acceptance = accepted / drafted. With np > 1, "
+          "tok/s is aggregate throughput of the concurrent group.\n")
     shared = sorted({label(r["config"]) + " " + r["config"]["quant"] for r in rows if r["gpu_shared"]})
     if shared:
         print(f"**GPU shared with another process during:** {', '.join(shared)}. Treat as suspect.\n")
@@ -54,8 +59,10 @@ def main() -> None:
             if r["temperature"] == temp:
                 by[(r["config"]["quant"], label(r["config"]))].append(r)
         quants = [q for q in QUANT_ORDER if any(k[0] == q for k in by)]
-        base = {q: hmean([r["tg"] for r in by[(q, "none")]]) for q in quants if (q, "none") in by}
-        base_text = {(q, r["prompt"]): r["text"] for q in quants for r in by.get((q, "none"), [])}
+        none = {q: next(lab for (qq, lab) in by if qq == q and lab.startswith("none"))
+                for q in quants if any(qq == q and lab.startswith("none") for qq, lab in by)}
+        base = {q: hmean([r["tg"] for r in by[(q, lab)]]) for q, lab in none.items()}
+        base_text = {(q, r["prompt"]): r["text"] for q, lab in none.items() for r in by[(q, lab)]}
         print(f"## Temperature {temp}\n")
         best = {}
         for q in quants:
@@ -71,13 +78,16 @@ def main() -> None:
                 d = sum(r["draft_n"] for r in rs)
                 a = sum(r["draft_accepted"] for r in rs)
                 n = sum(r["n_gen"] for r in rs)
-                per = {r["prompt"]: r["tg"] for r in rs}
+                per_all = defaultdict(list)  # several seeds: harmonic mean per prompt
+                for r in rs:
+                    per_all[r["prompt"]].append(r["tg"])
+                per = {k: hmean(v) for k, v in per_all.items()}
                 same = sum(r["text"] == base_text.get((q, r["prompt"])) for r in rs)
                 acc = f"{a / d:.0%}" if d else "-"
                 print(f"| {lab} | {tg:.1f} | {tg / base[q]:.2f}x | {acc} | {n / (n - a):.2f} | "
                       + " | ".join(f"{per[p]:.0f}" if p in per else "-" for p in prompts)
                       + f" | {same}/{len(rs)} |")
-                if lab != "none" and (q not in best or tg > best[q][1]):
+                if not lab.startswith("none") and (q not in best or tg > best[q][1]):
                     best[q] = (lab, tg, {p: per.get(p) for p in prompts})
             print()
         print("### Best config per quant\n")

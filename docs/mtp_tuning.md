@@ -125,10 +125,72 @@ HIP_VISIBLE_DEVICES=1 llama-server -m /mnt/fast/models/Qwen3.5-9B-Q6_K.gguf -ngl
 Tuning moves decode speed by at most ~2-5% over the defaults on this hardware. The quant and the
 kind of text matter far more.
 
+## Follow-up: long context, editing, seeds, concurrency, 9070 XT
+
+Runner: `benchmarks/mtp_open_items.sh`. Summaries: `experiments/results/mtp/summary_*.md`. No
+config shared the GPU with another process.
+
+### Repetitive editing: n-gram drafting stacks with MTP (R9700, 1024 tokens)
+
+Prompts return a whole source file with a one-line comment added above each function
+(`gguf-py/gguf/lazy.py`, `src/llama-impl.cpp`). Harmonic mean of the two:
+
+| | Q6_K tok/s | IQ4_XS tok/s | tokens per step |
+|---|---:|---:|---:|
+| no speculation | 70.0 | 89.9 | 1.0 |
+| draft-mtp n_max=3 | 144.2 (2.1x) | 173.6 (1.9x) | 3.8 |
+| ngram-mod alone | 263.6 | 346.0 | 4.8 |
+| **draft-mtp + ngram-mod** | **353.3 (5.0x)** | **450.9 (5.0x)** | 11.5 |
+| draft-mtp + ngram-map-k | 237.7 | 292.7 | 6.6 |
+
+- When the answer copies its input, ngram-mod drafts long runs straight from the context. The Python
+  file reaches 685 (Q6_K) / 905 (IQ4_XS) tok/s.
+- Combined with MTP, the C++ file still gets 238 / 300 tok/s, against 138 / 167 for MTP alone.
+- On normal prompts it costs nothing (section above). For coding assistants that rewrite files,
+  `--spec-type draft-mtp,ngram-mod` is the single biggest lever measured in this project.
+
+### Long context (R9700, ~4k / 16k / 28k tokens of C++ source, then a question)
+
+| | no speculation 4k / 16k / 28k | MTP n_max=3 4k / 16k / 28k | mean speedup |
+|---|---|---|---:|
+| Q6_K | 70 / 67 / 64 | 116 / 98 / 98 | 1.54x |
+| IQ4_XS | 89 / 84 / 80 | 133 / 128 / 115 | 1.48x |
+
+MTP keeps its ~1.5x at 28k tokens of context. Plain decoding slows ~9% from 4k to 28k (KV reads).
+
+### Temperature 0.7, three seeds (R9700)
+
+| | greedy draft | probabilistic draft |
+|---|---:|---:|
+| Q6_K | 108.9 | 112.0 (+2.8%) |
+| IQ4_XS | 133.1 | 136.0 (+2.2%) |
+
+The single-seed result holds: probabilistic drafts are 2-3% faster at temperature > 0.
+
+### Four concurrent requests (R9700, -np 4, aggregate throughput)
+
+| | no speculation | MTP n_max=3 | speedup |
+|---|---:|---:|---:|
+| Q6_K | 194.0 | 244.4 | 1.26x |
+| IQ4_XS | 256.3 | 314.4 | 1.23x |
+
+With 4 requests in flight the GPU already decodes 4 tokens per weight read, so MTP's extra verify
+tokens buy much less (1.25x vs ~1.5x single-user). It still helps.
+
+### RX 9070 XT (same six domain prompts)
+
+| Quant | no speculation | n_max=2 | n_max=3 | n_max=4 | R9700 n_max=3 |
+|---|---:|---:|---:|---:|---:|
+| Q8_0 | 57.4 | 97.7 | 103.1 | 103.2 | 104.8 |
+| Q6_K | 69.2 | 111.4 | 113.6 | 109.6 | 113.7 |
+| IQ4_XS | 88.1 | 131.9 | 134.5 | 129.6 | 135.9 |
+
+Same conclusions on the 9070 XT: draft length 3 is best (4 ties on Q8_0), and the two cards
+are within 0-2% of each other under MTP.
+
 ## Not covered
 
-- Long contexts (all prompts are short; the KV cache stays < 1k tokens).
-- Multi-turn and repetitive editing workloads, where n-gram drafting could help.
-- More than one seed at temperature 0.7.
-- `-np` > 1 (concurrent requests).
-- The same sweep on the 9070 XT.
+- Multi-turn chat.
+- Concurrency beyond 4 slots.
+- Edit workloads beyond the two files tested.
+- Offloading to system RAM (next milestone).

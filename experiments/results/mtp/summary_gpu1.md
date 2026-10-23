@@ -1,6 +1,6 @@
 # MTP tuning: mtp_tune_gpu1.jsonl
 
-660 generations, 512 tokens each, GPU 1. Speed is the harmonic mean over prompts; acceptance = accepted / drafted.
+708 generations (prompt set domains), up to 512 tokens each, GPU 1, seeds [0, 1, 2]. Speed is the harmonic mean over prompts (and seeds); acceptance = accepted / drafted. With np > 1, tok/s is aggregate throughput of the concurrent group.
 
 ## Temperature 0.0
 
@@ -152,8 +152,8 @@
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | draft-mtp n_max=2 | 109.2 | 1.54x | 72% | 2.44 | 120 | 100 | 97 | 123 | 96 | 129 | 0/6 |
 | draft-mtp n_max=2 --spec-draft-sampling probabilistic | 111.1 | 1.57x | 74% | 2.48 | 119 | 104 | 99 | 122 | 103 | 125 | 0/6 |
-| draft-mtp n_max=3 | 108.7 | 1.53x | 62% | 2.83 | 124 | 95 | 92 | 131 | 92 | 141 | 0/6 |
-| draft-mtp n_max=3 --spec-draft-sampling probabilistic | 111.7 | 1.57x | 64% | 2.91 | 116 | 103 | 88 | 135 | 107 | 137 | 0/6 |
+| draft-mtp n_max=3 | 108.9 | 1.53x | 62% | 2.83 | 122 | 97 | 90 | 134 | 91 | 141 | 0/18 |
+| draft-mtp n_max=3 --spec-draft-sampling probabilistic | 112.0 | 1.58x | 64% | 2.91 | 120 | 100 | 92 | 138 | 101 | 138 | 0/18 |
 | none | 71.0 | 1.00x | - | 1.00 | 71 | 71 | 71 | 71 | 71 | 71 | 6/6 |
 
 ### IQ4_XS (KLD 0.0184), no speculation 90.8 tok/s
@@ -162,8 +162,8 @@
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | draft-mtp n_max=2 | 130.7 | 1.44x | 71% | 2.42 | 141 | 125 | 107 | 145 | 124 | 153 | 0/6 |
 | draft-mtp n_max=2 --spec-draft-sampling probabilistic | 133.0 | 1.46x | 74% | 2.46 | 146 | 125 | 117 | 148 | 118 | 153 | 0/6 |
-| draft-mtp n_max=3 | 131.5 | 1.45x | 61% | 2.81 | 151 | 126 | 98 | 155 | 121 | 164 | 0/6 |
-| draft-mtp n_max=3 --spec-draft-sampling probabilistic | 136.5 | 1.50x | 64% | 2.91 | 155 | 126 | 112 | 161 | 117 | 169 | 0/6 |
+| draft-mtp n_max=3 | 133.1 | 1.47x | 62% | 2.84 | 152 | 121 | 107 | 159 | 116 | 167 | 0/18 |
+| draft-mtp n_max=3 --spec-draft-sampling probabilistic | 136.0 | 1.50x | 64% | 2.90 | 151 | 125 | 114 | 159 | 117 | 170 | 0/18 |
 | none | 90.8 | 1.00x | - | 1.00 | 91 | 91 | 91 | 91 | 91 | 91 | 6/6 |
 
 ### Best config per quant
@@ -171,6 +171,6 @@
 | quant | KLD | none tok/s | best config | tok/s | vs none | worst domain | best domain |
 |---|---|---|---|---|---|---|---|
 | Q8_0 | 0.0016 | 58.9 | draft-mtp n_max=3 --spec-draft-sampling probabilistic | 103.7 | 1.76x | prose 84 | json 127 |
-| Q6_K | 0.0028 | 71.0 | draft-mtp n_max=3 --spec-draft-sampling probabilistic | 111.7 | 1.57x | prose 88 | json 137 |
-| IQ4_XS | 0.0184 | 90.8 | draft-mtp n_max=3 --spec-draft-sampling probabilistic | 136.5 | 1.50x | prose 112 | json 169 |
+| Q6_K | 0.0028 | 71.0 | draft-mtp n_max=3 --spec-draft-sampling probabilistic | 112.0 | 1.58x | prose 92 | json 138 |
+| IQ4_XS | 0.0184 | 90.8 | draft-mtp n_max=3 --spec-draft-sampling probabilistic | 136.0 | 1.50x | prose 114 | json 170 |
 

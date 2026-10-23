@@ -14,11 +14,18 @@ the card's VRAM in use (MiB) before our server starts and after it stops; anythi
 means another process shared the GPU and the timings of that config are suspect.
 
     benchmarks/mtp_tune.py --gpu 1 --quants Q8_0 IQ4_XS --grid nmax
+    benchmarks/mtp_tune.py --gpu 1 --prompt-set longctx --configs '[{"quant": "Q6_K", ...}]'
+
+Prompt sets: `domains` (six short prompts), `longctx` (llama.cpp C++ source as ~4k / 16k / 28k
+tokens of context, then a question about it; needs "ctx": 32768 in the config), `edit` (return a
+whole source file with small additions: highly repetitive output). A config with "np": N runs N
+server slots and sends groups of N different prompts at once; tg is then aggregate throughput.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import itertools
 import json
 import os
@@ -27,6 +34,7 @@ import subprocess
 import sys
 import time
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent
@@ -58,7 +66,41 @@ PROMPTS = {
 }
 
 
-def post(port: int, path: str, obj: dict, timeout: float = 600) -> dict:
+LLAMA = Path.home() / "llama.cpp"
+QUESTION = ("Explain in detail what the code above does, function by function, including how the "
+            "functions interact and any edge cases they handle.")
+EDIT = ("Reproduce the following file in full, unchanged, except add a one-line comment directly "
+        "above every function or method definition that says what it does. Output only the code.")
+
+
+def head_lines(path: Path, chars: int) -> str:
+    """The first lines of a file, up to `chars` characters (cut at a line boundary)."""
+    out, n = [], 0
+    for line in path.read_text().splitlines(keepends=True):
+        if n + len(line) > chars:
+            break
+        out.append(line)
+        n += len(line)
+    return "".join(out)
+
+
+def prompt_set(name: str) -> dict[str, str]:
+    if name == "domains":
+        return PROMPTS
+    if name == "longctx":  # llama.cpp C++ is ~3.37 chars/token for this tokenizer
+        src = LLAMA / "src/llama-kv-cache.cpp"
+        return {f"longctx_{k}k": f"```cpp\n{head_lines(src, int(k * 1000 * 3.37))}```\n\n{QUESTION}"
+                for k in (4, 16, 28)}
+    if name == "pp":  # prompt processing: ~4k tokens of C++ in, a few tokens out
+        src = LLAMA / "src/llama-kv-cache.cpp"
+        return {"pp_4k": f"```cpp\n{head_lines(src, int(4000 * 3.37))}```\n\nSummarise this file in one line."}
+    if name == "edit":
+        return {"edit_python": f"{EDIT}\n\n```python\n{(LLAMA / 'gguf-py/gguf/lazy.py').read_text()}```",
+                "edit_cpp": f"{EDIT}\n\n```cpp\n{(LLAMA / 'src/llama-impl.cpp').read_text()}```"}
+    raise ValueError(name)
+
+
+def post(port: int, path: str, obj: dict, timeout: float = 1800) -> dict:
     req = urllib.request.Request(f"http://127.0.0.1:{port}{path}", data=json.dumps(obj).encode(),
                                  headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -95,6 +137,33 @@ def generate(port: int, prompt: str, max_tokens: int, temperature: float, seed: 
             "draft_accepted": t.get("draft_n_accepted", 0)}
 
 
+def generate_group(port: int, prompts: list[str], max_tokens: int, temperature: float,
+                   seed: int) -> dict:
+    """Send the prompts concurrently; aggregate tok/s = all generated tokens / wall time."""
+    t0 = time.perf_counter()
+    with ThreadPoolExecutor(len(prompts)) as ex:
+        rs = list(ex.map(lambda pr: generate(port, pr, max_tokens, temperature, seed), prompts))
+    wall = time.perf_counter() - t0
+    n = sum(r["n_gen"] for r in rs)
+    return {"text": [r["text"] for r in rs], "n_gen": n, "wall_s": wall, "tg": n / wall,
+            "tg_per_request": [r["tg"] for r in rs], "pp": min(r["pp"] for r in rs),
+            "prompt_n": sum(r["prompt_n"] for r in rs),
+            "draft_n": sum(r["draft_n"] for r in rs),
+            "draft_accepted": sum(r["draft_accepted"] for r in rs)}
+
+
+BUFFER = re.compile(r"(\w+(?:_\w+)?) (model|KV|compute|RS) buffer size =\s+([\d.]+) MiB")
+
+
+def buffers_from_log(path: Path) -> dict[str, float]:
+    """MiB per (device, kind) from llama-server's load log, e.g. {"ROCm0 model": 5021.3}."""
+    out: dict[str, float] = {}
+    for m in BUFFER.finditer(path.read_text(errors="replace")):
+        k = f"{m[1]} {m[2]}"
+        out[k] = out.get(k, 0.0) + float(m[3])
+    return out
+
+
 def vram_used_mib(gpu: int) -> int:
     """VRAM in use on rocm-smi card<gpu> (same order as HIP indices on this machine)."""
     out = subprocess.run(["rocm-smi", "--showmeminfo", "vram", "--json"], check=True,
@@ -106,9 +175,20 @@ def config_key(c: dict) -> str:
     return json.dumps(c, sort_keys=True)
 
 
+def model_path(c: dict) -> str:
+    return c.get("model_path") or str(MODELS / f"Qwen3.5-9B-{c['quant']}.gguf")
+
+
 def server_args(c: dict, port: int) -> list[str]:
-    a = [str(SERVER), "-m", str(MODELS / f"Qwen3.5-9B-{c['quant']}.gguf"), "-ngl", "99",
-         "-fa", "on", "-c", "8192", "--port", str(port), "--no-webui", "-np", "1"]
+    """Optional placement fields: "ngl" (GPU layers, default 99), "ot" (list of --override-tensor
+    patterns, e.g. FFN weights of some layers to CPU), "threads"."""
+    a = [str(SERVER), "-m", model_path(c), "-ngl", str(c.get("ngl", 99)),
+         "-fa", "on", "-c", str(c.get("ctx", 8192)), "--port", str(port), "--no-webui",
+         "-np", str(c.get("np", 1))]
+    for pat in c.get("ot", []):
+        a += ["-ot", pat]
+    if "threads" in c:
+        a += ["-t", str(c["threads"])]
     if c["spec"] != "none":
         a += ["--spec-type", c["spec"], "--spec-draft-n-max", str(c["n_max"]),
               "--spec-draft-n-min", str(c["n_min"]), "--spec-draft-p-min", str(c["p_min"])]
@@ -139,6 +219,7 @@ def main() -> None:
     ap.add_argument("--max-tokens", type=int, default=512)
     ap.add_argument("--temperature", type=float, default=0.0)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--prompt-set", default="domains", choices=["domains", "longctx", "edit", "pp"])
     ap.add_argument("--port", type=int, default=8199)
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
@@ -148,29 +229,52 @@ def main() -> None:
     if out.exists():
         for line in out.read_text().splitlines():
             r = json.loads(line)
-            done.add((config_key(r["config"]), r["prompt"], r["temperature"], r["max_tokens"]))
+            done.add((config_key(r["config"]), r["prompt"], r["temperature"], r["max_tokens"],
+                      r.get("seed", 0)))
 
     configs = json.loads(args.configs) if args.configs else grid(args.grid, args.quants)
     env = dict(os.environ, HIP_VISIBLE_DEVICES=str(args.gpu))
     logs = HERE / "experiments/logs/mtp"
     logs.mkdir(parents=True, exist_ok=True)
+    prompts = prompt_set(args.prompt_set)
     for c in configs:
-        todo = [p for p in PROMPTS if (config_key(c), p, args.temperature, args.max_tokens) not in done]
+        np_ = c.get("np", 1)
+        # With np > 1 slots, request groups of np different prompts are sent at once ("groupN").
+        units = (list(prompts) if np_ == 1 else
+                 [f"group{i}" for i in range(len(prompts))])
+        todo = [u for u in units
+                if (config_key(c), u, args.temperature, args.max_tokens, args.seed) not in done]
         if not todo:
             continue
         tag = re.sub(r"[^\w.,=-]+", "", "_".join(f"{k}{v}" for k, v in sorted(c.items())))
         vram_before = vram_used_mib(args.gpu)
         rows = []
-        with open(logs / f"server_gpu{args.gpu}_{tag}.log", "w") as log:
+        log_path = logs / f"server_gpu{args.gpu}_{tag}.log"
+        peak_vram = vram_before
+        with open(log_path, "w") as log:
             proc = subprocess.Popen(server_args(c, args.port), env=env, stdout=log,
                                     stderr=subprocess.STDOUT)
             try:
                 wait_healthy(args.port, proc)
+                peak_vram = max(peak_vram, vram_used_mib(args.gpu))
                 generate(args.port, "Say hello.", 32, 0.0, 0)  # warmup: graph capture, allocator
+                names = list(prompts)
                 for p in todo:
-                    r = generate(args.port, PROMPTS[p], args.max_tokens, args.temperature, args.seed)
-                    rows.append({"config": c, "prompt": p, "temperature": args.temperature,
+                    if np_ == 1:
+                        r = generate(args.port, prompts[p], args.max_tokens, args.temperature,
+                                     args.seed)
+                    else:
+                        i = int(p[5:])
+                        group = [names[(i + j) % len(names)] for j in range(np_)]
+                        r = generate_group(args.port, [prompts[g] for g in group], args.max_tokens,
+                                           args.temperature, args.seed)
+                        r["group"] = group
+                    text = prompts[p] if np_ == 1 else "".join(prompts[g] for g in group)
+                    rows.append({"config": c, "prompt": p, "prompt_set": args.prompt_set,
+                                 "prompt_sha256": hashlib.sha256(text.encode()).hexdigest()[:16],
+                                 "temperature": args.temperature, "seed": args.seed,
                                  "max_tokens": args.max_tokens, "gpu": args.gpu, **r})
+                    peak_vram = max(peak_vram, vram_used_mib(args.gpu))
                     acc = r["draft_accepted"] / r["draft_n"] if r["draft_n"] else float("nan")
                     print(f"{tag:55s} {p:12s} tg {r['tg']:6.1f} n {r['n_gen']:4d} "
                           f"draft {r['draft_accepted']}/{r['draft_n']} ({acc:.0%})", flush=True)
@@ -183,11 +287,13 @@ def main() -> None:
         time.sleep(2)
         vram_after = vram_used_mib(args.gpu)
         shared = max(vram_before, vram_after) > 1024
+        buffers = buffers_from_log(log_path)
         if shared:
             print(f"WARNING {tag}: GPU {args.gpu} shared (VRAM {vram_before} / {vram_after} MiB)")
         with open(out, "a") as f:
             for row in rows:
-                row.update(vram_before_mib=vram_before, vram_after_mib=vram_after, gpu_shared=shared)
+                row.update(vram_before_mib=vram_before, vram_after_mib=vram_after, gpu_shared=shared,
+                           vram_peak_mib=peak_vram, buffers_mib=buffers)
                 f.write(json.dumps(row) + "\n")
 
 
