@@ -54,6 +54,11 @@ pay off either.**
 Report: [docs/phase3_findings.md](docs/phase3_findings.md). Pre-registered gates and literature
 review: [docs/phase3_research.md](docs/phase3_research.md).
 
+**MTP tuning on the R9700:** llama.cpp's defaults are already near-optimal.
+- Six-domain averages: Q6_K + MTP 114 tok/s, IQ4_XS + MTP 136 tok/s (BF16 without MTP: 34 tok/s).
+- The kind of text matters more than any setting: 115 tok/s on prose vs 172 on JSON.
+- Details: [docs/mtp_tuning.md](docs/mtp_tuning.md).
+
 ## How the experiments fit together
 
 Calibration data fits everything; every quality number is scored on held-out text against one
@@ -150,6 +155,7 @@ benchmarks/gguf_mtp.sh 0 Q8_0 IQ4_XS && .venv/bin/python scripts/gguf_summary.py
 | [docs/findings.md](docs/findings.md) | All measured results (F0 to F4) |
 | [docs/writeup.md](docs/writeup.md) | Result summary and a runbook of every command run |
 | [docs/phase3_findings.md](docs/phase3_findings.md) | Phase 3: block granularity, TEAL/WINA/CATS predictors, MTP union, speed ceilings |
+| [docs/mtp_tuning.md](docs/mtp_tuning.md) | MTP draft length, confidence cut-off, n-gram, temperature sweep on the R9700 |
 | [docs/phase3_research.md](docs/phase3_research.md) | Phase 3 literature (Deja Vu, PowerInfer, DSMoE, TEAL, WINA, BlockFFN, Prox) and gates |
 | [docs/research.md](docs/research.md) | Literature survey: MoE upcycling, MoEfication, CMoE, TEAL, CATS, Deja Vu |
 | [docs/architecture.md](docs/architecture.md) | Partitioning, routing, kernels, code map |

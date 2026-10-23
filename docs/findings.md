@@ -270,3 +270,19 @@ such a bmm when t*n > 65535, and it produced wrong block scores in the first swe
 `TORCH_BLAS_PREFER_HIPBLASLT=0` (rocBLAS) is correct. Repro: `scripts/repro_bmm_batch_limit.py`.
 Fixed in `sparsity/blocks.py` (batch = number of blocks), with a GPU regression test. All
 Phase 1/2 batched matmuls have batch <= 20,000 and are unaffected.
+
+## F6. MTP tuning on the R9700 (2026-10-23)
+
+Full report: `docs/mtp_tuning.md`. 660 generations over six domains, 512 tokens each.
+
+- Default MTP (draft 3), six-domain harmonic mean: BF16 34.3 -> 49.9, Q8_0 58.8 -> 104.8 (1.78x),
+  Q6_K 70.9 -> 113.7, Q4_K_M 84.8 -> 124.2, IQ4_XS 91.0 -> 135.9 tok/s.
+- Domain dominates: IQ4_XS + MTP ranges from 115 (prose, 49% acceptance) to 172 tok/s (JSON, 90%).
+  The Phase 2 single-prompt 148 tok/s is the code prompt, not the average.
+- Tuning barely helps. Draft 3 is best or within noise for Q8_0/Q6_K/IQ4_XS (draft 2 for Q4_K_M,
+  +1.9%). Longer drafts lose (draft 8: -22% on IQ4_XS). `p_min` and `n_min` don't beat the default
+  except on BF16 (+5%). Adding n-gram drafters changes nothing on these prompts.
+- Temperature 0.7: 0-4% slower than greedy. `--spec-draft-sampling probabilistic` is 1-4% faster
+  than greedy drafts there (one seed).
+- MTP output is deterministic but not token-identical to plain decoding (batched-verify numerics).
+  Quality is the quant's.

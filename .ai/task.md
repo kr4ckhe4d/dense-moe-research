@@ -28,8 +28,14 @@ docs/phase3_findings.md (F5 in findings.md).
 - Result: G1/G2 fail, G3 paper-only (+4-12%), MTP stretch fails (<= +0.3%). Recommendation: stop.
 - Found hipBLASLt bmm batch >= 65536 bug (F5a) and an autograd leak in cached weight statistics.
 
+## Done (MTP tuning on the R9700), 2026-10-23
+- benchmarks/mtp_tune.py (server lifecycle, six domain prompts, VRAM-sharing guard, resumable
+  JSONL), scripts/mtp_summary.py. Report: docs/mtp_tuning.md (F6).
+- Result: defaults (draft 3) are best within noise; domain spread 115-172 tok/s on IQ4_XS;
+  probabilistic draft sampling helps slightly at temperature 0.7.
+
 ## Waiting on the user
-The decision on what follows Phase 3 (options in docs/roadmap.md).
+What follows (docs/roadmap.md).
 
 ## Next candidate experiments (cheapest first)
 1. Measure the real bar: Qwen3.5-9B GGUF at Q8_0 / Q6_K / Q4_K_M / IQ4_XS in llama.cpp (KLD vs BF16

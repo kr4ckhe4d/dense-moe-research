@@ -1,5 +1,13 @@
 # Roadmap
 
+## Status after MTP tuning (2026-10-23, F6)
+
+MTP defaults are already near-optimal on the R9700 (tuning: <= +2% except BF16 +5%). Recommended
+setups: Q6_K + MTP (114 tok/s, KLD 0.0028) or IQ4_XS + MTP (136 tok/s, KLD 0.018), with
+`--spec-draft-sampling probabilistic` at temperature > 0. See `docs/mtp_tuning.md`.
+Open: long-context and repetitive-editing workloads, the 9070 XT, concurrent requests.
+
+
 ## Status after Phase 3 milestone 1 (2026-10-23): predictive neuron sparsity (F5)
 
 | Gate | Result |
