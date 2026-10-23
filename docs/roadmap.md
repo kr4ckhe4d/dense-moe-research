@@ -11,9 +11,35 @@ The original hypothesis, training-free dense-to-MoE for faster inference, is not
 Qwen3.5-9B. The block-structured approximation is the problem. Neuron-level dynamic sparsity at
 the same budget is >10x better in KL.
 
-## Options for the next milestone
+## Status after milestone 2 (2026-10-23): the quantization bar (F4)
 
-### A. Establish the quantization bar (recommended first, ~30-60 min)
+| Option | Quality (KLD vs BF16, val) | Decode 9070 XT |
+|---|---|---|
+| Q8_0 | 0.0016 | 57.5 tok/s |
+| Q8_0 + MTP (lossless) | 0.0016 | 115.8 tok/s |
+| IQ4_XS + MTP | 0.0184 | 148.0 tok/s |
+| best training-free MoE (oracle 8/6, BF16) | 0.117 | ceiling ~1.18x of its base |
+| FFN bytes cut to 37% on top of IQ4_XS (speed proxy) | n/a | 105.8 tok/s (1.18x) |
+
+Option A is done. Sparse FFN is dominated on quality and can add at most ~1.2x on top of
+quantization, while MTP gives 1.67-2x losslessly. Anything further has to beat
+**IQ4_XS + MTP** or **Q8_0 + MTP** and stack with MTP.
+
+## Options for the next milestone (updated)
+
+Remaining sparse directions, re-ranked by expected value against the bar:
+1. **Close the project with a write-up** (negative result plus the measured bar). Lowest cost.
+2. **B1, exact down-proj skipping in llama.cpp**: lossless-ish at 75% kept (KLD 0.0013), but saves
+   ~8% of bytes, a few percent of decode at best, and it interacts badly with MTP batch-verify.
+   Not recommended.
+3. **B2/B3, TEAL or a predictor**: could reach the 1.1-1.2x the proxy allows, but needs a GGML
+   kernel, and the quality cost has to stay below IQ4_XS's 0.018. Research-grade, multi-week.
+4. **C, MoE + distillation**: expected value is low (oracle 8/6 is already 6x IQ4_XS's KLD before
+   any router error, and the speed ceiling is ~1.2x on top of quantization).
+
+## Original options (milestone 1)
+
+### A. Establish the quantization bar: DONE, see F4
 Convert Qwen3.5-9B to GGUF and measure Q8_0 / Q6_K / Q4_K_M / IQ4_XS: KLD vs BF16 on our eval
 text, plus decode/prefill tok/s on both GPUs. Every alternative has to beat this curve. MTP
 speculative decoding goes on the same table.

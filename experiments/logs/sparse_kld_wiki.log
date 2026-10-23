@@ -1,0 +1,22 @@
+Loading weights:   0%|          | 0/427 [00:00<?, ?it/s]Loading weights:   0%|          | 1/427 [00:00<06:55,  1.03it/s]Loading weights:   0%|          | 2/427 [00:01<05:39,  1.25it/s]Loading weights:   3%|▎         | 14/427 [00:01<00:33, 12.40it/s]Loading weights:   6%|▋         | 27/427 [00:01<00:15, 25.74it/s]Loading weights:   9%|▉         | 38/427 [00:01<00:10, 36.85it/s]Loading weights:  11%|█         | 47/427 [00:02<00:17, 21.92it/s]Loading weights:  12%|█▏        | 53/427 [00:03<00:21, 17.50it/s]Loading weights:  15%|█▌        | 66/427 [00:03<00:13, 26.86it/s]Loading weights:  18%|█▊        | 76/427 [00:03<00:10, 34.15it/s]Loading weights:  19%|█▉        | 83/427 [00:03<00:12, 28.46it/s]Loading weights:  22%|██▏       | 95/427 [00:04<00:09, 36.58it/s]Loading weights:  24%|██▎       | 101/427 [00:04<00:08, 36.46it/s]Loading weights:  28%|██▊       | 119/427 [00:04<00:05, 58.08it/s]Loading weights:  30%|███       | 130/427 [00:04<00:04, 66.77it/s]Loading weights:  33%|███▎      | 140/427 [00:04<00:04, 70.69it/s]Loading weights:  35%|███▍      | 149/427 [00:04<00:03, 73.95it/s]Loading weights:  37%|███▋      | 158/427 [00:04<00:03, 77.23it/s]Loading weights:  41%|████      | 173/427 [00:04<00:02, 90.07it/s]Loading weights:  44%|████▍     | 187/427 [00:05<00:02, 89.38it/s]Loading weights:  47%|████▋     | 202/427 [00:05<00:02, 97.64it/s]Loading weights:  50%|████▉     | 213/427 [00:05<00:02, 96.11it/s]Loading weights:  53%|█████▎    | 225/427 [00:05<00:01, 101.25it/s]Loading weights:  56%|█████▌    | 239/427 [00:05<00:01, 111.06it/s]Loading weights:  59%|█████▉    | 252/427 [00:05<00:01, 108.17it/s]Loading weights:  62%|██████▏   | 264/427 [00:05<00:01, 93.21it/s] Loading weights:  66%|██████▌   | 280/427 [00:05<00:01, 103.23it/s]Loading weights:  69%|██████▉   | 294/427 [00:06<00:01, 106.80it/s]Loading weights:  72%|███████▏  | 307/427 [00:06<00:01, 107.88it/s]Loading weights:  75%|███████▍  | 319/427 [00:06<00:00, 109.26it/s]Loading weights:  78%|███████▊  | 333/427 [00:06<00:00, 109.45it/s]Loading weights:  81%|████████▏ | 347/427 [00:06<00:00, 109.62it/s]Loading weights:  84%|████████▍ | 359/427 [00:07<00:01, 40.73it/s] Loading weights:  86%|████████▌ | 368/427 [00:07<00:01, 31.72it/s]Loading weights:  90%|████████▉ | 384/427 [00:07<00:00, 44.02it/s]Loading weights:  93%|█████████▎| 398/427 [00:08<00:00, 54.39it/s]Loading weights:  96%|█████████▋| 412/427 [00:08<00:00, 65.21it/s]Loading weights:  99%|█████████▉| 422/427 [00:08<00:00, 66.54it/s]Loading weights: 100%|██████████| 427/427 [00:08<00:00, 50.87it/s]
+2026-10-23 10:33:46,141 partitions fitted
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+[transformers] `chunk_gated_delta_rule` is falling back to its reference PyTorch implementation because `flash-linear-attention` is not installed. This is correct but much slower; install `flash-linear-attention` for the optimized kernel.
+2026-10-23 10:36:20,730 chunk 10/100
+2026-10-23 10:38:54,004 chunk 20/100
+2026-10-23 10:41:27,418 chunk 30/100
+2026-10-23 10:44:00,723 chunk 40/100
+2026-10-23 10:46:34,099 chunk 50/100
+2026-10-23 10:49:07,572 chunk 60/100
+2026-10-23 10:51:41,070 chunk 70/100
+2026-10-23 10:54:14,655 chunk 80/100
+2026-10-23 10:56:48,184 chunk 90/100
+2026-10-23 10:59:21,665 chunk 100/100
+2026-10-23 10:59:21,678 torch dense (bf16)     KLD 0.00052 ± 0.00003  p99 0.0023  PPL 8.0070  same-top 0.9820
+2026-10-23 10:59:21,679 neuron keep=0.75       KLD 0.00161 ± 0.00014  p99 0.0094  PPL 8.0126  same-top 0.9760
+2026-10-23 10:59:21,679 neuron keep=0.5        KLD 0.01476 ± 0.00064  p99 0.1071  PPL 8.0491  same-top 0.9451
+2026-10-23 10:59:21,680 neuron keep=0.25       KLD 0.09524 ± 0.00185  p99 0.6898  PPL 8.5288  same-top 0.8672
+2026-10-23 10:59:21,680 oracle E=4 k=3         KLD 0.25457 ± 0.00316  p99 1.9719  PPL 9.9330  same-top 0.7775
+2026-10-23 10:59:21,681 oracle E=8 k=6         KLD 0.18668 ± 0.00256  p99 1.5160  PPL 9.4352  same-top 0.8117
+2026-10-23 10:59:21,681 oracle E=16 k=8        KLD 0.46909 ± 0.00464  p99 3.2998  PPL 12.0830  same-top 0.7065
+2026-10-23 10:59:21,682 oracle E=8 k=4         KLD 0.63683 ± 0.00533  p99 3.8808  PPL 14.3455  same-top 0.6405

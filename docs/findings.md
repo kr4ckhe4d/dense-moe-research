@@ -144,3 +144,99 @@ quoted as a comparison.**
   Computing h reads all of gate/up, so with exact selection only `down_proj` (1/3 of FFN bytes)
   can be skipped. Getting more needs predicting active neurons *before* gate/up (Deja Vu-style
   predictors), or TEAL-style input thresholding, which has its own, different error profile.
+
+## F4. The quantization bar, and how sparse FFN variants compare to it (2026-10-23)
+
+All GGUFs were built here from the same HF snapshot (`convert_hf_to_gguf.py` → BF16 → `llama-quantize`,
+llama.cpp b11434). Everything below Q8_0 uses an imatrix computed on our **calib** split only.
+```bash
+PYTHONPATH=~/llama.cpp/gguf-py .venv/bin/python ~/llama.cpp/convert_hf_to_gguf.py <snapshot> \
+    --outtype bf16 --outfile /mnt/fast/models/Qwen3.5-9B-BF16.gguf
+HIP_VISIBLE_DEVICES=1 llama-imatrix -m .../Qwen3.5-9B-BF16.gguf -f cache/corpus/calib.txt -c 512 \
+    -ngl 99 -o cache/gguf/imatrix-calib.gguf                      # 295 chunks, 5.7 min
+llama-quantize [--imatrix cache/gguf/imatrix-calib.gguf] .../Qwen3.5-9B-BF16.gguf .../Qwen3.5-9B-$Q.gguf $Q 16
+```
+KLD follows llama.cpp's protocol, which is also the convention in `~/code/local-llm-benchmarks`:
+`-c 512`, 100 chunks, the last 255 tokens of each chunk scored (25,500 predictions), against
+llama.cpp BF16 logits. **val** is our hash-disjoint val split (6 domains, 9 × 1024 tokens
+each); **wiki** is wikitext-2 test.
+
+`scripts/sparse_kld_vs_gguf.py` scores the PyTorch variants against **the same base file**: same
+tokens, windows and compressed base log-probs, and llama.cpp's KL formula. It is one table, not
+two experiments. PyTorch BF16 dense against llama.cpp BF16 gives the implementation noise floor.
+
+### Quality (val split; wiki in `experiments/results/gguf/summary.json`)
+
+| Variant | Bytes read / token vs BF16 | Mean KLD | p99 KLD | same-top | PPL (base 3.725) |
+|---|---|---|---|---|---|
+| torch BF16 dense (noise floor) | 100% | 0.0004 | 0.002 | 0.987* | 3.726 |
+| Q8_0 | 53% | 0.0016 | 0.008 | 0.988 | 3.727 |
+| Q6_K | 41% | 0.0028 | 0.023 | 0.981 | 3.728 |
+| Q5_K_M | 36% | 0.0151 | 0.165 | 0.959 | 3.742 |
+| IQ4_XS | 29% | 0.0184 | 0.182 | 0.953 | 3.787 |
+| Q4_K_M | 31% | 0.0228 | 0.234 | 0.949 | 3.767 |
+| Q3_K_M | 26% | 0.0581 | 0.582 | 0.915 | 3.897 |
+| neuron oracle 75% (BF16) | ~92% † | 0.0013 | 0.009 | 0.985 | 3.731 |
+| neuron oracle 50% (BF16) | ~85% † | 0.0103 | 0.099 | 0.963 | 3.748 |
+| neuron oracle 25% (BF16) | ~77% † | 0.0703 | 0.676 | 0.907 | 3.914 |
+| oracle MoE 8/6 (BF16) | ~87% | 0.1170 | 1.240 | 0.881 | 4.079 |
+| oracle MoE 4/3 (BF16) | ~87% | 0.1484 | 1.560 | 0.865 | 4.206 |
+| oracle MoE 16/8 (BF16) | ~73% | 0.2951 | 2.714 | 0.813 | 4.846 |
+| oracle MoE 8/4 (BF16) | ~73% | 0.3755 | 3.262 | 0.786 | 5.228 |
+
+\* Same-top has a floor of about 98.7% even for identical-precision engines: near-tied top tokens,
+plus the 16-bit compression of the base log-probs. Read it relative to that floor.
+† Exact selection only skips `down_proj` columns (1/3 of FFN bytes). The byte column assumes the
+whole FFN shrinks, which needs a predictor, so it is optimistic.
+
+**The oracle MoE configs are 6-20x worse in KLD than IQ4_XS while saving fewer bytes, and they
+are upper bounds.** Oracle 8/6 is worse than Q3_K_M. No training-free MoE config is on the
+quality/bytes frontier. Wikitext-2 gives the same ordering, with everything about 1.3-1.7x higher
+(oracle 8/6 0.187 vs IQ4_XS 0.025, neuron 75% 0.0016 vs Q8_0 0.0014). Full table:
+`experiments/results/gguf/summary.md`.
+
+### Speed (llama-bench, `-fa 1`, 5 reps; 700-token probe for MTP)
+
+| Quant | GiB | tg128 9070 XT | pp2048 9070 XT | + MTP tg (accept) 9070 XT |
+|---|---|---|---|---|
+| Q8_0 | 9.10 | 57.5 | 4397 | **115.8** (79%) |
+| Q6_K | 7.03 | 70.3 | 2374 | **117.4** (70%) |
+| Q5_K_M | 6.18 | 77.0 | 3546 | — |
+| Q4_K_M | 5.37 | 84.0 | 3577 | **141.9** (80%) |
+| IQ4_XS | 4.95 | 89.6 | 4435 | **148.0** (75%) |
+| Q3_K_M | 4.40 | 88.9 | 3667 | — |
+
+The R9700 runs 2-3% faster on every quant (IQ4_XS 92.1, Q8_0 59.4 tok/s); BF16 there gets 34.7 tok/s
+(`bench_r9700.md`). MTP is the in-file `blk.32.nextn` head,
+`--spec-type draft-mtp`. With temperature 0, speculative decoding verifies every draft, so
+**MTP is lossless and doubles decode** (Q8_0: 57.5 → 115.8). Q6_K prefill is 45% slower than Q8_0
+on ROCm, which is a kernel artifact.
+
+### What sparse FFN could add on top of IQ4_XS (measured proxy)
+
+To get a speed bound without writing a GGML kernel, I re-quantized only the FFN tensors of layers
+0-31 to lower bit widths, keeping everything else at IQ4_XS, then measured decode
+(`bench_ffn_proxy_9070xt.md`). Fewer FFN bytes stands in for skipping FFN bytes. Quality is
+irrelevant here.
+
+| FFN bytes kept (vs IQ4_XS FFN) | File GiB | tg128 9070 XT | Speedup |
+|---|---|---|---|
+| 100% (IQ4_XS) | 4.95 | 89.6 | 1.00x |
+| 62% (FFN at Q2_K) | 4.01 | 97.2 | 1.09x |
+| 37% (FFN at IQ1_S) | 3.44 | 105.8 | 1.18x |
+
+At this size about half of the 11.2 ms per token doesn't scale with weight bytes: launches, the
+Gated DeltaNet recurrence, small ops and sampling. Removing 63% of FFN bytes (like a 8/3 MoE with
+a free router) buys **1.18x**, against MTP's lossless **1.67x** on the same file.
+
+### Verdict
+
+- The bar is IQ4_XS + MTP: **148 tok/s at KLD 0.018**, or Q8_0 + MTP at 116 tok/s, KLD 0.0016,
+  versus 57.5 tok/s for plain Q8_0.
+- Training-free MoE is dominated on both axes: worse quality than Q3_K_M, and at most ~1.2x on top
+  of quantization even with ideal kernels.
+- Neuron-level sparsity at 75% kept is the only sparse variant within the quant noise (0.0013 ≈
+  Q8_0), but the saving it can realize without a predictor is ~8% of bytes, a few percent of decode.
+- Sparse FFN would also have to coexist with MTP: the verify step runs 2+ tokens per pass, and
+  token-dependent sparsity loses part of its saving when the union of active experts or neurons
+  across the batch is read.

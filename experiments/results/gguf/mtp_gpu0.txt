@@ -1,0 +1,60 @@
+== Q8_0 spec=none gpu=0
+run1  prompt     54 tok @    994.6 tok/s | tg  57.18 tok/s,  700 tok
+run2  prompt     54 tok @   1062.6 tok/s | tg  57.38 tok/s,  700 tok
+run3  prompt     54 tok @   1099.1 tok/s | tg  57.42 tok/s,  700 tok
+
+prompt   1052.09 +/- 53.03 tok/s   (54 tok, cache off)
+tg         57.33 +/- 0.13 tok/s   (n=3, 700 tok)
+== Q8_0 spec=draft-mtp gpu=0
+run1  prompt     54 tok @    909.3 tok/s | tg 115.78 tok/s,  700 tok | draft 491/624 = 78.7%
+run2  prompt     54 tok @    984.4 tok/s | tg 115.99 tok/s,  700 tok | draft 491/624 = 78.7%
+run3  prompt     54 tok @   1004.1 tok/s | tg 115.77 tok/s,  700 tok | draft 491/624 = 78.7%
+
+prompt    965.91 +/- 50.02 tok/s   (54 tok, cache off)
+tg        115.85 +/- 0.12 tok/s   (n=3, 700 tok)
+draft      78.7% accepted
+== Q6_K spec=none gpu=0
+run1  prompt     54 tok @    813.7 tok/s | tg  68.77 tok/s,  700 tok
+run2  prompt     54 tok @    722.1 tok/s | tg  69.25 tok/s,  700 tok
+run3  prompt     54 tok @    947.8 tok/s | tg  69.23 tok/s,  700 tok
+
+prompt    827.87 +/- 113.47 tok/s   (54 tok, cache off)
+tg         69.08 +/- 0.27 tok/s   (n=3, 700 tok)
+== Q6_K spec=draft-mtp gpu=0
+run1  prompt     54 tok @    820.6 tok/s | tg 113.47 tok/s,  700 tok | draft 474/675 = 70.2%
+run2  prompt     54 tok @    867.0 tok/s | tg 119.18 tok/s,  700 tok | draft 475/672 = 70.7%
+run3  prompt     54 tok @    877.4 tok/s | tg 119.59 tok/s,  700 tok | draft 475/672 = 70.7%
+
+prompt    854.99 +/- 30.21 tok/s   (54 tok, cache off)
+tg        117.42 +/- 3.42 tok/s   (n=3, 700 tok)
+draft      70.5% accepted
+== Q4_K_M spec=none gpu=0
+run1  prompt     54 tok @    985.9 tok/s | tg  81.69 tok/s,  700 tok
+run2  prompt     54 tok @   1128.3 tok/s | tg  82.38 tok/s,  700 tok
+run3  prompt     54 tok @   1159.7 tok/s | tg  82.62 tok/s,  700 tok
+
+prompt   1091.29 +/- 92.66 tok/s   (54 tok, cache off)
+tg         82.23 +/- 0.48 tok/s   (n=3, 700 tok)
+== Q4_K_M spec=draft-mtp gpu=0
+run1  prompt     54 tok @    988.4 tok/s | tg 141.10 tok/s,  700 tok | draft 492/618 = 79.6%
+run2  prompt     54 tok @   1013.4 tok/s | tg 142.51 tok/s,  700 tok | draft 494/612 = 80.7%
+run3  prompt     54 tok @   1062.8 tok/s | tg 142.18 tok/s,  700 tok | draft 494/612 = 80.7%
+
+prompt   1021.54 +/- 37.88 tok/s   (54 tok, cache off)
+tg        141.93 +/- 0.74 tok/s   (n=3, 700 tok)
+draft      80.3% accepted
+== IQ4_XS spec=none gpu=0
+run1  prompt     54 tok @   1201.9 tok/s | tg  88.43 tok/s,  700 tok
+run2  prompt     54 tok @   1289.0 tok/s | tg  88.48 tok/s,  700 tok
+run3  prompt     54 tok @   1327.8 tok/s | tg  88.52 tok/s,  700 tok
+
+prompt   1272.88 +/- 64.46 tok/s   (54 tok, cache off)
+tg         88.48 +/- 0.05 tok/s   (n=3, 700 tok)
+== IQ4_XS spec=draft-mtp gpu=0
+run1  prompt     54 tok @   1105.8 tok/s | tg 147.72 tok/s,  700 tok | draft 481/648 = 74.2%
+run2  prompt     54 tok @   1171.8 tok/s | tg 148.21 tok/s,  700 tok | draft 482/645 = 74.7%
+run3  prompt     54 tok @   1237.8 tok/s | tg 148.09 tok/s,  700 tok | draft 482/645 = 74.7%
+
+prompt   1171.80 +/- 65.98 tok/s   (54 tok, cache off)
+tg        148.01 +/- 0.26 tok/s   (n=3, 700 tok)
+draft      74.6% accepted

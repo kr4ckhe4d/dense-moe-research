@@ -9,6 +9,15 @@
 - Result: decode kernels hit 82-98% of the ideal speedup, but **even oracle routing loses too
   much quality** (8/6: KL 0.14, PPL +12%; 8/4: KL 0.46, PPL +47%). See docs/findings.md F2-F3.
 
+## Done (milestone 2: quantization bar), 2026-10-23
+- BF16 GGUF from the HF snapshot, imatrix on calib, Q8_0/Q6_K/Q5_K_M/Q4_K_M/IQ4_XS/Q3_K_M
+  (all in /mnt/fast/models/Qwen3.5-9B-*.gguf, plus two FFN-proxy files)
+- KLD vs llama.cpp BF16 on val + wikitext-2 (benchmarks/gguf_kld.sh); PyTorch sparse variants scored
+  against the same base file (scripts/sparse_kld_vs_gguf.py); llama-bench on both GPUs; MTP
+  (benchmarks/gguf_mtp.sh); FFN-bytes speed proxy. Summary: scripts/gguf_summary.py. See F4.
+- Result: IQ4_XS + MTP 148 tok/s at KLD 0.018; oracle MoE 8/6 has KLD 0.117; at most ~1.2x
+  from sparse FFN on top of IQ4_XS.
+
 ## Waiting on the user
 The decision on the next milestone (options in docs/roadmap.md).
 
