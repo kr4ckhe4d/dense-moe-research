@@ -1,5 +1,23 @@
 # Roadmap
 
+## Final status (2026-10-24, F9): project closed
+
+All open items from the 27B milestone were done (`docs/dflash.md`). The closing summary,
+recommendations per GPU size, and limits are in `docs/conclusions.md`.
+- MMVQ patch: neutral or faster on both RDNA4 cards, the 9B, Gemma 4 31B and two MoE models.
+  Upstream evidence on b11719 is in `docs/upstream_mmvq.md`. Opening the PR is left to the user:
+  llama.cpp requires the contributor to write it and disclose AI use.
+- DFlash at long context (+3-6% over MTP), sampling (+14-18%), editing with n-gram (5.4-5.7x),
+  4 users (+3-6%).
+- The 9B has its own DFlash drafter (+12-29% over MTP).
+- Under offload MTP wins, except for a 27B that is mostly in RAM.
+
+Left open, none planned:
+- Real smaller GPUs and slower host RAM. Budgets were simulated on a fast card with DDR5.
+- Shrinking the DFlash drafter's VRAM use with `-ngld 0`.
+- Prefill-heavy workloads under offload.
+- Training a sparse model (requirements stages 2-3).
+
 ## Status after the 27B speed milestone (2026-10-24, F8)
 
 On a 32 GB RDNA4 card the 27B runs at 62.6 tok/s at UD-Q6_K quality (was 51.2) and 81.9 at

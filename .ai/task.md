@@ -45,13 +45,25 @@ docs/phase3_findings.md (F5 in findings.md).
 - benchmarks/fast27b_drafters.sh, fast27b_quants.sh, mmvq_batch_bench.sh,
   fast27b_mmvq_drafters.sh; scripts/fast27b_summary.py; docs/fast27b.md (F8).
 - patches/llama.cpp-rdna4-mmvq-multicol.patch, built in worktree ~/llama.cpp-mmvq (build/ = clean
-  patch; build-v1..v12 = tuning variants, deletable). Production ~/llama.cpp/build untouched.
+  patch; tuning variants build-v1..v12 deleted 2026-10-24). Production ~/llama.cpp/build untouched.
 - New files on /mnt/fast/models: Qwen3.8-27B-DFlash2-Q8_0.gguf (2 GB),
   Qwen3.8-27B-{Q5_K_M,Q4_K_M,Q4_0}-rq.gguf (~52 GB).
 - mtp_tune.py: "bin" config field, health timeout 600 s.
 
+## Done (final milestone: DFlash follow-up, kernel check, conclusions), 2026-10-24
+- Cleanup: deleted ~/llama.cpp-mmvq/build-v1..v12 and Qwen3.8-27B-{Q5_K_M,Q4_K_M,Q4_0}-rq.gguf
+  (scripts/fast27b_summary.py now has the sizes hard-coded).
+- benchmarks/mmvq_check.sh, dflash_open_items.sh, offload_dflash_fit.py, mmvq_upstream.sh,
+  mmvq_types.sh (temporary --pure 9B quants in /mnt/fast/models/tmp-puretypes, deleted after);
+  scripts/mmvq_check_summary.py, dflash_summary.py, mmvq_upstream_summary.py; docs/dflash.md (F9),
+  docs/conclusions.md, docs/upstream_mmvq.md.
+- New on /mnt/fast/models: Qwen3.5-9B-DFlash-Q8_0.gguf (1.38 GB, AtomicChat GGUF of
+  z-lab/Qwen3.5-9B-DFlash).
+- New worktree ~/llama.cpp-b11719-mmvq (b11719 + patch); ~/llama.cpp-b11719 now has build/.
+- mtp_tune.py: server log names over 200 chars are cut and get a hash suffix.
+
 ## Waiting on the user
-What follows (docs/roadmap.md).
+Project closed (docs/conclusions.md). Possible: the user opens the upstream PR themselves.
 
 ## Next candidate experiments (cheapest first)
 1. Measure the real bar: Qwen3.5-9B GGUF at Q8_0 / Q6_K / Q4_K_M / IQ4_XS in llama.cpp (KLD vs BF16

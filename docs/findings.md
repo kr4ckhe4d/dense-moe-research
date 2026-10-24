@@ -324,3 +324,36 @@ Full report: `docs/fast27b.md`. Qwen3.8-27B fully on the R9700, six domains x 51
   (0.0023), Q5_K_M 64.5 (0.0066), IQ4_XS 81.9 (0.0185), Q4_0 85.0 (0.0297). Against UD-Q6_K + MTP
   n=3 on the stock build (51.2): +22% at the same quality.
 
+
+## F9. DFlash beyond short greedy prompts, the 9B, offloading; the MMVQ patch elsewhere (2026-10-24)
+
+Full report: `docs/dflash.md`. Closing summary of the project: `docs/conclusions.md`.
+- **The MMVQ patch helps or is neutral everywhere measured.**
+  - Verify batches of 6-8 tokens are 14-23% faster on K-quants (9B, 27B Q3_K_M, Gemma 4 31B) on
+    both the R9700 and the RX 9070 XT.
+  - MoE models (Qwen3.6-35B-A3B, gpt-oss-20b): 0-5%. Batch 1: +-2%.
+  - test-backend-ops passes on both cards.
+  - On upstream master b11719 (`docs/upstream_mmvq.md`):
+    - End to end, the 27B UD-Q6_K goes from 57.1 to 67.5 tok/s with DFlash (+18%) and from 52.3
+      to 56.2 with MTP (+7%).
+    - Nine more quant types (IQ1_M, IQ2_*, IQ3_*, Q2_K, Q3_K, Q5_K, IQ4_NL; `--pure` 9B) are
+      10-23% faster at 6 columns, including the "complex vec_dot" types.
+    - Perplexity is identical. The one failing MUL_MAT test (f16, n=2.1M) also fails on stock
+      master.
+- **The 9B has a DFlash drafter** (z-lab/Qwen3.5-9B-DFlash, 1.3B parameters, GGUF Q8_0 1.38 GB).
+  It beats MTP by 12-29%:
+  - Q8_0 + DFlash n=7: 133.8 tok/s (MTP 104.5).
+  - IQ4_XS + DFlash n=5: 164.5 (MTP 141.1).
+  - Same on both cards.
+- **Where DFlash's lead over MTP holds:**
+  - Sampling at temperature 0.7 and 1.0 (default top-k/top-p/min-p): +14-18%.
+  - Long context (4k-28k): +3-6%.
+  - 4 concurrent requests: +3-6%.
+  - Editing with `draft-dflash,ngram-mod`: 5.4-5.7x plain, +2-7% over `draft-mtp,ngram-mod`.
+- `--spec-draft-sampling probabilistic` has no effect on DFlash: only the simple and MTP drafters
+  read it.
+- **Partly offloaded (simulated 4-16 GB): MTP beats DFlash almost everywhere.**
+  - The drafter costs 9-20 GPU layers, or 2-9 with `-ngld 0` (~0.4-1.4 GB of VRAM still used).
+  - 27B IQ4_XS at 16 GB: MTP 70.6 vs DFlash at best 46.8.
+  - Exception: the 27B mostly in RAM (IQ4_XS at 8/12 GB, UD-Q6_K at 8 GB), where DFlash n=7 with
+    the drafter in RAM is +8-28%.

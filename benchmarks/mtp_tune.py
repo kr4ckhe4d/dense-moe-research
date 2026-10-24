@@ -251,6 +251,8 @@ def main() -> None:
         if not todo:
             continue
         tag = re.sub(r"[^\w.,=-]+", "", "_".join(f"{k}{v}" for k, v in sorted(c.items())))
+        if len(tag) > 200:  # file names are limited to 255 bytes
+            tag = tag[:180] + "_" + hashlib.sha1(tag.encode()).hexdigest()[:12]
         vram_before = vram_used_mib(args.gpu)
         rows = []
         log_path = logs / f"server_gpu{args.gpu}_{tag}.log"

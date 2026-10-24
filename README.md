@@ -9,6 +9,23 @@ Quality is measured as **KL divergence** against the BF16 model, using the same 
 
 Negative results are reported as negative results.
 
+## Bottom line
+
+The project is finished. Closing summary: [docs/conclusions.md](docs/conclusions.md).
+- **Sparsifying a dense model without training doesn't pay off.** This covers MoE conversion,
+  activation sparsity, and keeping "hot" neurons in VRAM.
+- **What does pay off, all lossless except the quant itself:**
+  - Quantize until the model fits in VRAM.
+  - Turn on speculative decoding: the model's MTP head, or a trained DFlash drafter when the model
+    is fully in VRAM.
+  - Add n-gram drafting for editing.
+- **Measured speeds:**
+  - 9B: 132-163 tok/s on a 12-16 GB card.
+  - 27B: 71 tok/s on 16 GB, 62.6 tok/s at near-lossless quality on 32 GB.
+- **RDNA4 kernel fix:** a 7-line change to llama.cpp's MMVQ kernel makes speculative verification
+  14-23% faster on K-quants
+  ([patch](patches/llama.cpp-rdna4-mmvq-multicol.patch), [evidence](docs/upstream_mmvq.md)).
+
 ## Key results
 
 **Training-free dense-to-MoE conversion doesn't pay off on this model.** The sparse kernels are
@@ -77,6 +94,17 @@ review: [docs/phase3_research.md](docs/phase3_research.md).
 - On RDNA4, llama.cpp verified drafts slowly for K-quants; a small MMVQ kernel change
   ([patch](patches/llama.cpp-rdna4-mmvq-multicol.patch)) makes that 17-21% faster.
 - Details: [docs/fast27b.md](docs/fast27b.md).
+
+**DFlash beyond short greedy prompts, the 9B, and smaller GPUs:**
+- The 9B has its own DFlash drafter: 133.8 tok/s at lossless Q8_0 and 164.5 at IQ4_XS, 12-29%
+  ahead of MTP.
+- DFlash keeps a 14-18% lead with sampling (temperature 0.7-1.0). The lead shrinks to 3-6% at
+  long context or with 4 concurrent users.
+- For editing, `draft-dflash,ngram-mod` reaches 5.4-5.7x plain decoding.
+- When the model is partly in RAM, MTP wins: the DFlash drafter costs too much VRAM.
+- The MMVQ patch is neutral or faster on every model and card tested (both RDNA4 cards, dense and
+  MoE).
+- Details: [docs/dflash.md](docs/dflash.md).
 
 ## How the experiments fit together
 
@@ -171,9 +199,12 @@ benchmarks/gguf_mtp.sh 0 Q8_0 IQ4_XS && .venv/bin/python scripts/gguf_summary.py
 
 | Doc | Contents |
 |---|---|
-| [docs/findings.md](docs/findings.md) | All measured results (F0 to F4) |
+| [docs/findings.md](docs/findings.md) | All measured results (F0 to F9) |
 | [docs/writeup.md](docs/writeup.md) | Result summary and a runbook of every command run |
 | [docs/phase3_findings.md](docs/phase3_findings.md) | Phase 3: block granularity, TEAL/WINA/CATS predictors, MTP union, speed ceilings |
+| [docs/conclusions.md](docs/conclusions.md) | Closing summary: answers, what to run per GPU size, limits |
+| [docs/dflash.md](docs/dflash.md) | DFlash: 9B drafter, long context, sampling, editing, concurrency, offload; MMVQ patch on other models |
+| [docs/upstream_mmvq.md](docs/upstream_mmvq.md) | Evidence pack for upstreaming the RDNA4 MMVQ patch (b11719) |
 | [docs/fast27b.md](docs/fast27b.md) | 27B on one 32 GB card: DFlash2 vs MTP, quants, RDNA4 MMVQ kernel tuning |
 | [docs/offload.md](docs/offload.md) | Smaller GPUs: offload vs quantize, MTP under offload, CPU-side sparsity ceiling |
 | [docs/mtp_tuning.md](docs/mtp_tuning.md) | MTP draft length, confidence cut-off, n-gram, temperature sweep on the R9700 |

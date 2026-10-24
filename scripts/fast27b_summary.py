@@ -18,6 +18,9 @@ QUANTS = ["Q8_0", "UD-Q6_K", "Q5_K_M-rq", "Q4_K_M-rq", "IQ4_XS-rq", "Q4_0-rq", "
 # KLD vs Q8_0, wikitext-2 test, c=512, 100 chunks (offload/kld27b_*.txt, fast27b/kld27b_*.txt)
 KLD = {"Q8_0": 0.0, "UD-Q6_K": 0.0023, "Q5_K_M-rq": 0.0066, "Q4_K_M-rq": 0.0157,
        "IQ4_XS-rq": 0.0185, "Q4_0-rq": 0.0297, "Q3_K_M-rq": 0.0542}
+# File sizes (GiB); the Q5_K_M / Q4_K_M / Q4_0 trial quants were deleted after the milestone.
+GIB = {"Q8_0": 27.05, "UD-Q6_K": 20.47, "Q5_K_M-rq": 18.19, "Q4_K_M-rq": 15.66,
+       "IQ4_XS-rq": 14.26, "Q4_0-rq": 14.68, "Q3_K_M-rq": 12.57}
 
 
 def batch_ms(path: Path) -> dict[int, float]:
@@ -48,7 +51,7 @@ def main() -> None:
     print("| quant | GiB | KLD | build | 1 | 2 | 3 | 4 | 5 | 6 | 8 | t(6)/t(1) |")
     print("|---|---|---|---|---|---|---|---|---|---|---|---|")
     for q in QUANTS:
-        gib = Path(f"/mnt/fast/models/Qwen3.8-27B-{q}.gguf").stat().st_size / 2**30
+        gib = GIB[q]
         ctrl = R / f"mmvq/control_{q}.json"
         for label, p in (("stock", ctrl if ctrl.exists() else R / f"bench_{q}.json"),
                          ("tuned", R / f"mmvq/v6_{q}.json")):
