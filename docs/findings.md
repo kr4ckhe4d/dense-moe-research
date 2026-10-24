@@ -309,3 +309,18 @@ and Qwen3.8-27B.
   rows read) / +14-26% (75%) without MTP, and ~0 with MTP (4-token union). Not worth building.
 - New 27B quants (requantized from Q8_0, imatrix from calib), KLD vs Q8_0 on wikitext-2:
   UD-Q6_K 0.0023, IQ4_XS-rq 0.0185, Q3_K_M-rq 0.054.
+
+## F8. Faster 27B on one 32 GB card: DFlash2 drafter + RDNA4 MMVQ tuning (2026-10-24)
+
+Full report: `docs/fast27b.md`. Qwen3.8-27B fully on the R9700, six domains x 512 tokens, t=0.
+- Plain decoding is near the bandwidth limit (UD-Q6_K 24.4 tok/s, ~84% of peak). Gains come from
+  more tokens per weight read.
+- DFlash2 (block-diffusion drafter, 2 GB) with `--spec-draft-n-max 5` beats the in-file MTP head
+  at every quant, by 4-28% at each one's best draft length.
+- On RDNA4, llama.cpp's MMVQ kernel used 1 warp x 1 row per block for 2-8 token batches, so
+  verifying 6 tokens on K-quants cost 1.5-1.7x one token (Q8_0 1.12x). 2 warps x 4 rows cuts that
+  by 17-21% for K-quants and Q4_0, 10% IQ4_XS, 4% Q8_0 (`patches/`, test-backend-ops passes).
+- Best per quant, tuned build (KLD vs Q8_0): Q8_0 DFlash2 n=7 61.9 (0), UD-Q6_K n=5 62.6
+  (0.0023), Q5_K_M 64.5 (0.0066), IQ4_XS 81.9 (0.0185), Q4_0 85.0 (0.0297). Against UD-Q6_K + MTP
+  n=3 on the stock build (51.2): +22% at the same quality.
+

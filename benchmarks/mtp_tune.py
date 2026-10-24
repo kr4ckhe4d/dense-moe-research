@@ -109,7 +109,7 @@ def post(port: int, path: str, obj: dict, timeout: float = 1800) -> dict:
         return json.loads(r.read())
 
 
-def wait_healthy(port: int, proc: subprocess.Popen, timeout: float = 180) -> None:
+def wait_healthy(port: int, proc: subprocess.Popen, timeout: float = 600) -> None:
     t0 = time.time()
     while time.time() - t0 < timeout:
         if proc.poll() is not None:
@@ -183,8 +183,10 @@ def model_path(c: dict) -> str:
 
 def server_args(c: dict, port: int) -> list[str]:
     """Optional placement fields: "ngl" (GPU layers, default 99), "ot" (list of --override-tensor
-    patterns, e.g. FFN weights of some layers to CPU), "threads"."""
-    a = [str(SERVER), "-m", model_path(c), "-ngl", str(c.get("ngl", 99)),
+    patterns, e.g. FFN weights of some layers to CPU), "threads", "bin" (another llama.cpp build's
+    bin directory)."""
+    server = Path(c["bin"]) / "llama-server" if "bin" in c else SERVER
+    a = [str(server), "-m", model_path(c), "-ngl", str(c.get("ngl", 99)),
          "-fa", "on", "-c", str(c.get("ctx", 8192)), "--port", str(port), "--no-webui",
          "-np", str(c.get("np", 1))]
     for pat in c.get("ot", []):

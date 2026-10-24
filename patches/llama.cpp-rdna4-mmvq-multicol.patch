@@ -1,0 +1,26 @@
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index 251577d2f..c2a70046e 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -502,7 +502,10 @@ static constexpr __host__ __device__ int calc_nwarps(ggml_type type, int ncols_d
+                     return 1;
+             }
+         }
+-        return 1;
++        // 2-8 columns (e.g. speculative decoding verify): 2 warps x 4 rows per block (see
++        // calc_rows_per_block). Measured on R9700 against 1 warp x 1 row: Q6_K -20%, Q4_K -17%,
++        // Q4_0 -21%, IQ4_XS -10%, Q8_0 -4% time at 6 columns; 1 column unchanged.
++        return 2;
+     }
+     if (table_id == MMVQ_PARAMETERS_RDNA3_0) {
+         // RDNA3 (W7900): stricter whitelist than RDNA4.
+@@ -593,6 +596,9 @@ static constexpr __host__ __device__ int calc_rows_per_block(int ncols_dst, int
+                 return 1;
+         }
+     }
++    if (table_id == MMVQ_PARAMETERS_RDNA4 && ncols_dst > 1) {
++        return 4;
++    }
+     return 1;
+ }
+ 

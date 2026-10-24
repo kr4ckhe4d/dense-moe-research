@@ -1,5 +1,17 @@
 # Roadmap
 
+## Status after the 27B speed milestone (2026-10-24, F8)
+
+On a 32 GB RDNA4 card the 27B runs at 62.6 tok/s at UD-Q6_K quality (was 51.2) and 81.9 at
+IQ4_XS: DFlash2 drafter at draft length 5, plus a tuned RDNA4 MMVQ kernel for 2-8 token batches.
+See `docs/fast27b.md`.
+
+Open:
+- Upstream the MMVQ patch (needs RDNA4 numbers on more shapes and MoE models).
+- DFlash2 at long context and at temperature 1.
+- DFlash2 + n-gram drafting for editing; DFlash2 under offload on 16 GB cards.
+- The same kernel check on the 9070 XT and for the 9B.
+
 ## Status after the offload milestone (2026-10-23, F7)
 
 For limited-VRAM users: MTP always (1.7-2.5x when offloaded), quantize until it fits, offload

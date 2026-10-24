@@ -69,6 +69,15 @@ review: [docs/phase3_research.md](docs/phase3_research.md).
 - CPU-side activation sparsity isn't worth building.
 - Details: [docs/offload.md](docs/offload.md).
 
+**Faster 27B on one 32 GB card:**
+- Qwen3.8-27B fully on an R9700: 62.6 tok/s at UD-Q6_K quality, up from 51.2 with MTP, and 81.9
+  at IQ4_XS.
+- DFlash2 drafter (`--spec-type draft-dflash`, draft length 5) beats the built-in MTP head at
+  every quant.
+- On RDNA4, llama.cpp verified drafts slowly for K-quants; a small MMVQ kernel change
+  ([patch](patches/llama.cpp-rdna4-mmvq-multicol.patch)) makes that 17-21% faster.
+- Details: [docs/fast27b.md](docs/fast27b.md).
+
 ## How the experiments fit together
 
 Calibration data fits everything; every quality number is scored on held-out text against one
@@ -165,6 +174,7 @@ benchmarks/gguf_mtp.sh 0 Q8_0 IQ4_XS && .venv/bin/python scripts/gguf_summary.py
 | [docs/findings.md](docs/findings.md) | All measured results (F0 to F4) |
 | [docs/writeup.md](docs/writeup.md) | Result summary and a runbook of every command run |
 | [docs/phase3_findings.md](docs/phase3_findings.md) | Phase 3: block granularity, TEAL/WINA/CATS predictors, MTP union, speed ceilings |
+| [docs/fast27b.md](docs/fast27b.md) | 27B on one 32 GB card: DFlash2 vs MTP, quants, RDNA4 MMVQ kernel tuning |
 | [docs/offload.md](docs/offload.md) | Smaller GPUs: offload vs quantize, MTP under offload, CPU-side sparsity ceiling |
 | [docs/mtp_tuning.md](docs/mtp_tuning.md) | MTP draft length, confidence cut-off, n-gram, temperature sweep on the R9700 |
 | [docs/phase3_research.md](docs/phase3_research.md) | Phase 3 literature (Deja Vu, PowerInfer, DSMoE, TEAL, WINA, BlockFFN, Prox) and gates |

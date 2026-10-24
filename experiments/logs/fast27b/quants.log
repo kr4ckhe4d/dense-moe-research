@@ -1,0 +1,16 @@
+bench Q8_0 done
+bench UD-Q6_K done
+bench Q5_K_M-rq done
+bench Q4_K_M-rq done
+bench IQ4_XS-rq done
+bench Q4_0-rq done
+bench Q3_K_M-rq done
+Q5_K_M-rq: chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS            Same top p
+Q5_K_M-rq: Mean    KLD:   0.006594 ±   0.000146
+Q5_K_M-rq: Same top p: 96.449 ± 0.082 %
+Q4_K_M-rq: chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS            Same top p
+Q4_K_M-rq: Mean    KLD:   0.015703 ±   0.000221
+Q4_K_M-rq: Same top p: 94.651 ± 0.100 %
+Q4_0-rq: chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS            Same top p
+Q4_0-rq: Mean    KLD:   0.029718 ±   0.000378
+Q4_0-rq: Same top p: 92.561 ± 0.116 %

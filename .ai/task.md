@@ -41,6 +41,15 @@ docs/phase3_findings.md (F5 in findings.md).
 - 27B requants on /mnt/fast/models: Qwen3.8-27B-{IQ4_XS,Q3_K_M}-rq.gguf (~28 GB).
   imatrix: cache/gguf/imatrix-27b-calib.gguf.
 
+## Done (27B speed milestone), 2026-10-24
+- benchmarks/fast27b_drafters.sh, fast27b_quants.sh, mmvq_batch_bench.sh,
+  fast27b_mmvq_drafters.sh; scripts/fast27b_summary.py; docs/fast27b.md (F8).
+- patches/llama.cpp-rdna4-mmvq-multicol.patch, built in worktree ~/llama.cpp-mmvq (build/ = clean
+  patch; build-v1..v12 = tuning variants, deletable). Production ~/llama.cpp/build untouched.
+- New files on /mnt/fast/models: Qwen3.8-27B-DFlash2-Q8_0.gguf (2 GB),
+  Qwen3.8-27B-{Q5_K_M,Q4_K_M,Q4_0}-rq.gguf (~52 GB).
+- mtp_tune.py: "bin" config field, health timeout 600 s.
+
 ## Waiting on the user
 What follows (docs/roadmap.md).
 
