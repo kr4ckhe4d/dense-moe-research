@@ -87,7 +87,19 @@ llama-server -m Qwen3.8-27B-IQ4_XS.gguf -ngl 47 -fa on -c 8192 \
 ```
 
 On RDNA4 (RX 9070 / 9070 XT / R9700), build llama.cpp with
-`patches/llama.cpp-rdna4-mmvq-multicol.patch` until it is upstream.
+`patches/llama.cpp-rdna4-mmvq-multicol.patch` until it is upstream. The patched build used for all
+drafter runs (`~/llama.cpp-mmvq`, b11434 + patch; since deleted) is rebuilt with:
+
+```bash
+git -C ~/llama.cpp worktree add --detach ~/llama.cpp-mmvq 5e03bdd87   # b11434
+cd ~/llama.cpp-mmvq && git apply ~/code/dense-moe/patches/llama.cpp-rdna4-mmvq-multicol.patch
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1201 \
+  -DCMAKE_HIP_COMPILER_ROCM_ROOT=/opt/rocm -DCMAKE_HIP_FLAGS="--rocm-path=/opt/rocm" \
+  -DLLAMA_CURL=OFF
+cmake --build build -j --target llama-server llama-bench llama-perplexity test-backend-ops
+```
+
+The patch also applies cleanly to b11719 (5aeac37a3), see `docs/upstream_mmvq.md`.
 
 ## 3. What was built along the way
 

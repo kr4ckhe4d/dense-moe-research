@@ -196,9 +196,18 @@ Qwen3.8-27B UD-Q6_K, R9700, six prompts x 512 tokens, temperature 0, harmonic me
 ## Reproduce
 
 ```bash
-# builds: stock master and master + patch (same cmake flags as docs/fast27b.md)
+# builds: stock master and master + patch (both worktrees deleted after the run)
+git -C ~/llama.cpp worktree add --detach ~/llama.cpp-b11719 5aeac37a3
 git -C ~/llama.cpp worktree add --detach ~/llama.cpp-b11719-mmvq 5aeac37a3
 git -C ~/llama.cpp-b11719-mmvq apply ~/code/dense-moe/patches/llama.cpp-rdna4-mmvq-multicol.patch
+for d in ~/llama.cpp-b11719 ~/llama.cpp-b11719-mmvq; do
+  cmake -S $d -B $d/build -DCMAKE_BUILD_TYPE=Release -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1201 \
+    -DCMAKE_HIP_COMPILER_ROCM_ROOT=/opt/rocm -DCMAKE_HIP_FLAGS="--rocm-path=/opt/rocm" \
+    -DLLAMA_CURL=OFF
+  cmake --build $d/build -j --target llama-bench llama-perplexity test-backend-ops llama-server
+done
+# models: Qwen3.5-9B quants are made from Qwen/Qwen3.5-9B (BF16 GGUF + calibration imatrix,
+# docs/writeup.md); the per-type --pure files go in /mnt/fast/models/tmp-puretypes
 benchmarks/mmvq_upstream.sh && benchmarks/mmvq_types.sh
 python3 scripts/mmvq_upstream_summary.py > experiments/results/mmvq_upstream/summary.md
 ```

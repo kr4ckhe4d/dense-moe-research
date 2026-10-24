@@ -21,7 +21,8 @@ Code:
 
 - **Build:** llama.cpp b11434 with `patches/llama.cpp-rdna4-mmvq-multicol.patch`
   (`~/llama.cpp-mmvq/build`) for every drafter run. The stock control is `~/llama.cpp/build`, the
-  same commit without the patch.
+  same commit without the patch. The patched worktree was deleted afterwards; rebuild commands are
+  in `docs/conclusions.md` section 2.
 - **Drafters:**
   - 27B: DFlash2 Q8_0 (2.06 GB), as before.
   - 9B: DFlash for Qwen3.5-9B ([z-lab/Qwen3.5-9B-DFlash], 6 layers, 1.3B parameters), GGUF Q8_0
