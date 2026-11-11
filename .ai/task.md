@@ -105,9 +105,18 @@ docs/phase3_findings.md (F5 in findings.md).
 - Gotcha: do not export TEMP to llama-server (it is the temp-directory variable; the server
   exits during load). adopt_check_seeds.sh uses QTEMP.
 
+## Done (matrix-core kernel for small batches), 2026-11-11
+- patches/llama.cpp-rdna4-fattn-q8-tile.patch regenerated (720 lines): RDNA4, head 256, more
+  than 4 Q heads per K/V head, 1-32 tokens go to the WMMA kernel with ncols2 = 8, twice the
+  blocks, direct q8_0 / q4_0 loading (ggml_cuda_fattn_mma_rdna4_wide in fattn-common.cuh).
+- docs/depth.md section 10 (F15); scripts/fattn_wide_summary.py ->
+  experiments/results/fattn/summary_wide.md; depth_wide*.jsonl; perf_wide_*; test_wide_*.
+- MTP q8_0 KV at 120K: 34.0 -> 44.8 tok/s (R9700), 32.8 -> 44.0 (both cards).
+- ~/llama.cpp-b12164-mmvq/build has it (llama-server, llama-bench, test-backend-ops).
+
 ## Waiting on the user
 Original project closed (docs/conclusions.md). Next milestone to be chosen from docs/roadmap.md
-(suggested: per-context neuron subsets, or the upstream PRs). Possible: the user opens the upstream PR themselves.
+(suggested: widen the section 10 rule to the 9B shape, per-context neuron subsets, or the upstream PRs). Possible: the user opens the upstream PR themselves.
 
 ## Next candidate experiments (cheapest first)
 1. Measure the real bar: Qwen3.5-9B GGUF at Q8_0 / Q6_K / Q4_K_M / IQ4_XS in llama.cpp (KLD vs BF16

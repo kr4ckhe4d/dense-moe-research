@@ -36,6 +36,10 @@ Follow-up tests are listed in [docs/roadmap.md](docs/roadmap.md).
 - **Lenient draft acceptance (lossy, opt-in):** keeping drafted tokens the target rates at 30%
   or more of its top choice gives +10% at temperature 0 and +17% at temperature 1.0; the
   code-quality suite shows no loss within noise ([docs/lenient.md](docs/lenient.md)).
+- **Verify batches at depth (2026-11-11):** the matrix-core attention kernel scanned each K/V
+  head three times for the 27B and ran too few blocks. Fixed in the attention patch: with MTP and
+  q8_0 KV at 120K context the 27B goes from 34.0 to 44.8 tok/s (stock llama.cpp: 29.1)
+  ([docs/depth.md](docs/depth.md) section 10).
 
 ## Key results
 
@@ -214,7 +218,7 @@ benchmarks/gguf_mtp.sh 0 Q8_0 IQ4_XS && .venv/bin/python scripts/gguf_summary.py
 | [docs/writeup.md](docs/writeup.md) | Result summary and a runbook of every command run |
 | [docs/phase3_findings.md](docs/phase3_findings.md) | Phase 3: block granularity, TEAL/WINA/CATS predictors, MTP union, speed ceilings |
 | [docs/conclusions.md](docs/conclusions.md) | Closing summary: answers, what to run per GPU size, limits |
-| [docs/depth.md](docs/depth.md) | Decode speed at 2K-120K context: attention cost, q8_0 vs f16 KV, MTP at depth; attention kernel patch for q8_0 KV; MMVQ patch on b12164 |
+| [docs/depth.md](docs/depth.md) | Decode speed at 2K-120K context: attention cost, q8_0 vs f16 KV, MTP at depth; attention kernel patches for small batches and q8_0 / q4_0 KV; MMVQ patch on b12164 |
 | [docs/dflash.md](docs/dflash.md) | DFlash: 9B drafter, long context, sampling, editing, concurrency, offload; MMVQ patch on other models |
 | [docs/upstream_mmvq.md](docs/upstream_mmvq.md) | Evidence pack for upstreaming the RDNA4 MMVQ patch (b11719) |
 | [docs/fast27b.md](docs/fast27b.md) | 27B on one 32 GB card: DFlash2 vs MTP, quants, RDNA4 MMVQ kernel tuning |

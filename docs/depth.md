@@ -9,7 +9,8 @@ Model: Qwen3.8-27B UD-Q6_K, fully on the Radeon AI PRO R9700 (32 GB). llama.cpp 
 
 Code: `benchmarks/mmvq_b12164.sh`, `benchmarks/depth_profile.py`, `scripts/depth_summary.py` ->
 `experiments/results/depth/summary.md`; `scripts/fattn_summary.py` ->
-`experiments/results/fattn/summary.md`. Patches: `patches/llama.cpp-rdna4-mmvq-multicol.patch`,
+`experiments/results/fattn/summary.md`; `scripts/fattn_wide_summary.py` ->
+`experiments/results/fattn/summary_wide.md`. Patches: `patches/llama.cpp-rdna4-mmvq-multicol.patch`,
 `patches/llama.cpp-rdna4-fattn-q8-tile.patch`.
 
 ## Method
@@ -296,6 +297,81 @@ One attention layer at 122,624 KV rows, R9700, us per call, stock -> patched
 - No model on disk has head size 64 or 128 (Qwen3.5-9B and Qwen3.8-27B use 256, Gemma 4 12B
   512 / 256), so those shapes have kernel timings only.
 
+### 10. Verify batches at the cost of one token: the matrix-core kernel with one scan per K/V head
+
+Section 7 ended with "needs a new kernel". It did not: the existing matrix-core (WMMA) kernel was
+slow on small batches for two reasons that are both in how it is launched.
+
+- **Three scans per K/V head.** This model has 6 Q heads per K/V head. On RDNA the launcher groups
+  Q heads only in exact divisors (8, 4 or 2), so it used groups of 2 and read each K/V head three
+  times. Grouping all 6 in one 8-wide tile (2 columns unused) reads it once.
+- **Too few blocks.** The block count comes from an occupancy query that is low on RDNA4. Twice
+  as many is the optimum for these kernels; 1.5x, 3x and 4x were all slower or equal
+  (f16, 4 tokens at 120K: 1272 / 854 / 987 / 895 us at 1x / 2x / 3x / 4x).
+- **q8_0 and q4_0 read directly.** The kernel's loader now dequantizes K/V as it fills a tile, as
+  the tile kernel does since section 6, so the f16 copy of the whole cache per call is gone.
+
+The rule (RDNA4, head size 256, more than 4 Q heads per K/V head, 1-32 tokens) is in the same
+patch file. f16 K/V keeps the tile kernel for 1 token, and 1-2 token batches under 8,192 KV rows
+keep the old paths, because those were faster there.
+
+One attention layer of the 27B shape, R9700, us per call, before -> after (before = the patch as
+of section 9; `experiments/results/fattn/summary_wide.md` has all depths and the RX 9070 XT):
+
+| KV type | KV rows | 1 token | 2 tokens | 4 tokens | 8 tokens | 16 tokens | 32 tokens |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| q8_0 | 4,096 | 36 -> 37 | 55 -> 48 | 68 -> 33 | 97 -> 51 | 159 -> 64 | 202 -> 107 |
+| q8_0 | 32,768 | 249 -> 153 | 418 -> 154 | 524 -> 138 | 750 -> 219 | 1420 -> 388 | 1896 -> 743 |
+| q8_0 | 122,624 | 945 -> 561 | 1711 -> 567 | 2055 -> 546 | 2839 -> 746 | 5093 -> 1451 | 6352 -> 2769 |
+| f16 | 4,096 | 27 -> 27 | 41 -> 42 | 53 -> 41 | 85 -> 55 | 117 -> 69 | 159 -> 113 |
+| f16 | 32,768 | 225 -> 225 | 324 -> 267 | 412 -> 256 | 666 -> 304 | 995 -> 461 | 1443 -> 870 |
+| f16 | 122,624 | 811 -> 809 | 1315 -> 854 | 1606 -> 851 | 2486 -> 933 | 3633 -> 1686 | 4916 -> 3209 |
+| q4_0 | 122,624 | 968 -> 366 | 1779 -> 369 | 2081 -> 476 | 2839 -> 714 | | |
+
+- **A 4-token verify batch now costs the same as one token**, and for q8_0 less than one token
+  cost before (546 against 945 us at 120K).
+- **q8_0 is now faster than f16** (546 against 851 us): it is half the bytes and the kernel is
+  bound by memory bandwidth. One read of q8_0 K/V for this layer at 640 GB/s would be 417 us.
+- No measured shape is slower: 6 depths x 7 batch sizes x f16 / q8_0 on both cards. The RX 9070 XT
+  is within 7% of the R9700.
+- `test-backend-ops -o FLASH_ATTN_EXT`: 4295 of 4295 on both cards, with 63 new cases at 8,192
+  rows (1-33 tokens, f16 / q8_0 / q4_0, with sinks, two sequences).
+
+**End to end, 27B UD-Q6_K** (same protocol as section 2; `off` is the same build with the rule
+disabled and reproduces the earlier patched numbers;
+`experiments/results/fattn/depth_wide.jsonl`, `depth_wide_2gpu.jsonl`). ms per target evaluation:
+
+| config | 2K | 32K | 64K | 120K | tok/s at 120K |
+|---|---:|---:|---:|---:|---:|
+| R9700: plain, q8_0 KV, before | 41.1 | 44.9 | 48.7 | 56.2 | 17.7 |
+| R9700: plain, q8_0 KV, after | 41.1 | 43.8 | 45.8 | 49.7 | 20.0 (+13%) |
+| R9700: MTP, q8_0 KV, before | 56.9 | 66.0 | 75.0 | 92.6 | 34.0 |
+| R9700: MTP, q8_0 KV, after | 56.9 | 59.9 | 62.8 | 68.5 | 44.8 (+32%) |
+| R9700: MTP, f16 KV, before | 56.5 | 63.7 | 70.8 | 84.4 | 36.8 |
+| R9700: MTP, f16 KV, after | 56.7 | 60.9 | 65.0 | 72.8 | 42.9 (+17%) |
+| R9700: MTP, q4_0 KV, before | 56.9 | 66.1 | 75.2 | 92.4 | 33.3 |
+| R9700: MTP, q4_0 KV, after | 56.8 | 59.5 | 62.2 | 67.3 | 47.4 |
+| both cards: plain, q8_0 KV, before | 42.1 | 45.8 | 49.6 | 58.4 | 17.1 |
+| both cards: plain, q8_0 KV, after | 42.0 | 44.7 | 46.8 | 50.7 | 19.6 (+15%) |
+| both cards: MTP, q8_0 KV, before | 58.1 | 67.3 | 77.7 | 96.0 | 32.8 |
+| both cards: MTP, q8_0 KV, after | 58.0 | 61.2 | 64.0 | 69.8 | 44.0 (+34%) |
+
+- **MTP with q8_0 KV at 120K: 34.0 -> 44.8 tok/s on the R9700, 32.8 -> 44.0 on both cards.**
+  Against the fully stock build (29.1 and 28.5) that is +54% on either layout.
+- Going from 2K to 120K now adds 11.6 ms to an MTP step with q8_0 KV. It added 35.7 ms before
+  this section and 46.7 ms on stock; one read of the cache at 640 GB/s is 6.6 ms.
+- At 120K the 27B with MTP keeps 77% of its 2K speed (44.8 of 58.3 tok/s). Stock kept 52%.
+- q8_0 KV is now the faster choice as well as the smaller one: 68.5 against 72.8 ms for f16.
+  The q4_0 tok/s gain is not given as a percentage because the two runs accepted different
+  numbers of drafts (3.09 and 3.20 tokens per step); its step time fell 27%.
+- The two-card 2K cell is from a repeat (`depth_wide_2gpu_recheck.jsonl`, 58.0 and 58.1 ms in two
+  runs each way). The main run had one slow row there (64.8 ms on one of the two tasks, mean 61.5).
+- Greedy output: 2-4 of 8 generations per config are identical to the run with the rule off; the
+  rest diverge, as they do between q8_0 and f16 KV (section 6). The kernels round differently.
+- Peak VRAM is unchanged (within 45 MiB).
+- Code quality on this build: the 12-seed suite of section 8 was still running when this was
+  written; no result yet.
+
 ## What this means
 
 1. **Without rebuilding llama.cpp: use an f16 KV cache for the 27B at long context** where the
@@ -306,8 +382,10 @@ One attention layer at 122,624 KV rows, R9700, us per call, stock -> patched
 3. **The MMVQ patch is still worth carrying**, and worth 3-4 ms per verify step at any depth.
 4. **The patched build is safe to use for the daily presets** (section 8): the same gains on
    both cards (+15% with MTP at 120K, +5% at 2K) and no measurable change in code quality.
-5. **The extra cost of verify batches at depth is not a cheap fix** (section 7): about 4% is
-   available from block-count tuning; more needs a new small-batch matrix-core kernel.
+5. **The extra cost of verify batches at depth is gone** (section 10): the matrix-core kernel
+   with one scan per K/V head runs a 4-token batch for the price of one token. With MTP and q8_0
+   KV at 120K the 27B does 44.8 tok/s (stock 29.1), and q8_0 KV is now faster than f16, so
+   point 1 only applies to an unpatched build.
 
 ## Limits
 
@@ -315,6 +393,10 @@ One attention layer at 122,624 KV rows, R9700, us per call, stock -> patched
 - Only MTP at draft length 3. DFlash at depth on this build was not measured (the drafter GGUF is
   no longer on disk).
 - The "ideal" rows assume the whole cache is read once per evaluation at 640 GB/s.
+- The section 10 rule covers head size 256 with more than 4 Q heads per K/V head, which is the
+  27B (Qwen3.5-9B has 16 Q heads over 4 K/V heads and is not covered). Whether head sizes 64 and
+  128 or 4 Q heads per K/V head gain from the same block count and direct quantized loading was
+  not tested. Batches over 32 tokens keep the old path; the best cut-off was not searched.
 - The attention patch covers q8_0 and q4_0 K and V (both the same type) at head sizes 64, 128
   and 256; other types and sizes keep the old paths. Head sizes 64 and 128 have kernel timings
   and correctness tests only, no end-to-end run. Measured on RDNA4 only. No llama-perplexity

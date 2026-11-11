@@ -433,3 +433,17 @@ environment variable).
 - Code-quality suite on the daily preset, 12 seeds: 39.1 +- 4.3 against 38.0 +- 3.3 exact;
   temperature 0: 40 against 41. No loss measurable; the suite resolves about 3 points.
 - Not lossless and only tested on code quality, so it is not suggested for daily use.
+
+## F15. Verify batches at the cost of one token at depth: +32% with MTP at 120K (2026-11-11)
+
+Full report: `docs/depth.md` section 10. Patch: `patches/llama.cpp-rdna4-fattn-q8-tile.patch`.
+- The matrix-core attention kernel read each K/V head three times for the 27B (6 Q heads per K/V
+  head, grouped in twos) and ran too few blocks on RDNA4. One 8-wide group, twice the blocks, and
+  direct q8_0 / q4_0 loading fix it. Rule: RDNA4, head size 256, more than 4 Q heads per K/V
+  head, 1-32 tokens.
+- One layer at 122,624 rows, q8_0, R9700: 4 tokens 2055 -> 546 us, 1 token 945 -> 561; f16
+  4 tokens 1606 -> 851. No measured shape slower (4K-120K rows, 1-32 tokens, both cards).
+- 27B UD-Q6_K, MTP, q8_0 KV at 120K: 34.0 -> 44.8 tok/s on the R9700 (92.6 -> 68.5 ms per verify
+  step), 32.8 -> 44.0 on both cards; stock is 29.1 / 28.5. Plain decoding +13-15%.
+- q8_0 KV is now faster than f16 KV (68.5 against 72.8 ms per step at 120K).
+- Tests 4295/4295 on both cards. Code-quality suite on this build: not finished yet.
