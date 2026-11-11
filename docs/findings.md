@@ -357,3 +357,21 @@ Full report: `docs/dflash.md`. Closing summary of the project: `docs/conclusions
   - 27B IQ4_XS at 16 GB: MTP 70.6 vs DFlash at best 46.8.
   - Exception: the 27B mostly in RAM (IQ4_XS at 8/12 GB, UD-Q6_K at 8 GB), where DFlash n=7 with
     the drafter in RAM is +8-28%.
+
+
+## F10. Decode at context depth; the MMVQ patch on b12164 (2026-11-11)
+
+Full report: `docs/depth.md`. Qwen3.8-27B UD-Q6_K fully on the R9700, llama.cpp b12164
+(4b77dee05), prompts of 2K-120K tokens of C++ source, two tasks x 256 tokens, t=0.
+- **The MMVQ patch still applies and helps on b12164.** Upstream's rework (#30517) made stock
+  faster (UD-Q6_K 6-token batch 66.4 -> 56.7 ms); the patch takes it to 48.8 (-14%), 8 tokens
+  70.8 -> 54.3 (-23%). Q3_K_M on the RX 9070 XT: -19% at 6. 1 token, pp512, tg128 within 2%.
+  With the patch a 6-token batch costs 1.18x one token on UD-Q6_K, 1.06x on Q8_0.
+- **At depth the loss is attention time, not acceptance.** MTP keeps 2.9-3.4 tokens per target
+  evaluation from 2K to 120K, while the evaluation goes from 60 to 107 ms (q8_0 KV).
+- **q8_0 KV is slow to attend over on RDNA4.** Per token at 120K it adds 27.7 ms, 4.2x one read
+  of the cache at 640 GB/s (6.6 ms). f16 KV adds 12.5 ms, at its ideal (12.3).
+- **f16 KV instead of q8_0:** plain 14.3 -> 18.7 tok/s at 120K (+31%), MTP 29.1 -> 35.5 (+22%),
+  36.9 with the patch. Costs 3.3 GiB at 131,072 context; no gain in an empty context.
+- A verify step pays for depth 1.7-2.3x what one token does (f16: 28.8 vs 12.5 ms at 120K).
+- Prefill falls from ~860 to ~485 tok/s between 2K and 120K, the same for both KV types.

@@ -1,5 +1,32 @@
 # Roadmap
 
+## Reopened (2026-11-11): candidate tests beyond the closed findings
+
+The sparsity results stand. These are the tests that could still change decode speed, on
+llama.cpp b12164 (4b77dee05). Only ideas with a plausible gain are listed; a trained tiny router
+and other fixed neuron groupings (including overlapping ones) are not, because the oracle router
+and the 8-neuron block result already bound them.
+
+Done (`docs/depth.md`, F10):
+- **Patch re-check on b12164.** Upstream's own MMVQ rework (#30517) made stock faster, and the
+  patch still helps on top (UD-Q6_K: 6-token batch 56.7 -> 48.8 ms, 8-token 70.8 -> 54.3 ms;
+  1 token unchanged).
+- **Decode against context depth** (27B UD-Q6_K, R9700, 2K-120K). Acceptance holds at depth; the
+  time goes to attention. The q8_0 KV cache takes 4.2x its bandwidth-ideal time, f16 runs at the
+  ideal. Switching to f16 KV: +22-31% at 120K for 3.3 GiB.
+
+Candidates, in the order I would run them:
+
+| # | Test | Why it could matter | Cheap first step |
+|---|---|---|---|
+| 1 | **Quantized-KV attention kernel on RDNA4** | q8_0 KV adds 27.7 ms per token at 120K where one read of the cache at peak bandwidth is 6.6 ms. At the ideal: +44% plain decode at 120K, and better than f16 at half the VRAM. `fattn-vec.cuh` has RDNA-specific thread counts for quantized K | Confirm which kernel runs; sweep its thread counts with a depth-only benchmark, as was done for MMVQ |
+| 2 | **Attention in the verify batch** | An MTP verify step pays for depth 1.7-2.3x what one token does, though its 4 tokens read the same cache. Paying once: +22% at 120K with f16 KV | Time attention alone for 1-8 query tokens at 120K |
+| 3 | **f16 KV on the two-card daily presets** | Measured on one card only; the presets split the model over both | Re-run `depth_profile.py` with the preset layout |
+| 4 | **Lenient draft acceptance** | Verification accepts only exact matches. Accepting near-ties spends a small quality budget on acceptance instead of on bits; aimed at prose and instructions (~49% acceptance) | Log the target's probability of each rejected draft token; no patch needed to size the gain |
+| 5 | **Per-context neuron subsets** | One neuron subset per kind of text (code, prose, JSON), chosen per neuron from recorded usage. Unlike per-token masks it is stable across the verify batch, so it could stack with MTP / DFlash. Ceiling ~1.2x on top of quantization. Untested: only whole-expert static pruning was measured (KLD 0.395 at 75%) | Offline: per-domain subsets at 50% / 75% kept, same KLD protocol, plus routing of held-out prompts. Needs activations regenerated (~half a day in all). Pass bar: near IQ4_XS's 0.018 at 50% |
+| 6 | **Shared-dequant verify kernel** | The multi-column MMVQ loop dequantizes each weight block once per drafted token. Smaller than first estimated: with the patch a 6-token batch costs 1.18x one token on UD-Q6_K (Q3_K_M 1.47x, Q8_0 1.06x), so ~10% of a verify step on Q6_K. Upstream merged the same idea for OpenCL (#31758) | Prototype for Q6_K only, time with `llama-bench -p 1..8` |
+| 7 | **Drafter fine-tuned on the user's workload** | DFlash drafters are 1.3-2B parameters and trainable on the R9700; output stays lossless. Targets the same weak domains as 4 | Measure acceptance on real agent transcripts first |
+
 ## Final status (2026-10-24, F9): project closed
 
 All open items from the 27B milestone were done (`docs/dflash.md`). The closing summary,

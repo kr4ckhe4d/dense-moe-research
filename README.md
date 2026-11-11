@@ -11,7 +11,8 @@ Negative results are reported as negative results.
 
 ## Bottom line
 
-The project is finished. Closing summary: [docs/conclusions.md](docs/conclusions.md).
+The original project is finished. Closing summary: [docs/conclusions.md](docs/conclusions.md).
+Follow-up tests are listed in [docs/roadmap.md](docs/roadmap.md).
 - **Sparsifying a dense model without training doesn't pay off.** This covers MoE conversion,
   activation sparsity, and keeping "hot" neurons in VRAM.
 - **What does pay off, all lossless except the quant itself:**
@@ -25,6 +26,10 @@ The project is finished. Closing summary: [docs/conclusions.md](docs/conclusions
 - **RDNA4 kernel fix:** a 7-line change to llama.cpp's MMVQ kernel makes speculative verification
   14-23% faster on K-quants
   ([patch](patches/llama.cpp-rdna4-mmvq-multicol.patch), [evidence](docs/upstream_mmvq.md)).
+
+- **Follow-up (2026-11-11), long context:** at 120K tokens the 27B loses its speed to attention
+  over the KV cache, not to draft acceptance. A q8_0 KV cache is 2.2x slower to attend over than
+  f16 on RDNA4; switching to f16 gives +22-31% at 120K for 3.3 GiB ([docs/depth.md](docs/depth.md)).
 
 ## Key results
 
@@ -199,10 +204,11 @@ benchmarks/gguf_mtp.sh 0 Q8_0 IQ4_XS && .venv/bin/python scripts/gguf_summary.py
 
 | Doc | Contents |
 |---|---|
-| [docs/findings.md](docs/findings.md) | All measured results (F0 to F9) |
+| [docs/findings.md](docs/findings.md) | All measured results (F0 to F10) |
 | [docs/writeup.md](docs/writeup.md) | Result summary and a runbook of every command run |
 | [docs/phase3_findings.md](docs/phase3_findings.md) | Phase 3: block granularity, TEAL/WINA/CATS predictors, MTP union, speed ceilings |
 | [docs/conclusions.md](docs/conclusions.md) | Closing summary: answers, what to run per GPU size, limits |
+| [docs/depth.md](docs/depth.md) | Decode speed at 2K-120K context: attention cost, q8_0 vs f16 KV, MTP at depth; MMVQ patch on b12164 |
 | [docs/dflash.md](docs/dflash.md) | DFlash: 9B drafter, long context, sampling, editing, concurrency, offload; MMVQ patch on other models |
 | [docs/upstream_mmvq.md](docs/upstream_mmvq.md) | Evidence pack for upstreaming the RDNA4 MMVQ patch (b11719) |
 | [docs/fast27b.md](docs/fast27b.md) | 27B on one 32 GB card: DFlash2 vs MTP, quants, RDNA4 MMVQ kernel tuning |

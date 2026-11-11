@@ -62,8 +62,16 @@ docs/phase3_findings.md (F5 in findings.md).
 - New worktree ~/llama.cpp-b11719-mmvq (b11719 + patch); ~/llama.cpp-b11719 now has build/.
 - mtp_tune.py: server log names over 200 chars are cut and get a hash suffix.
 
+## Done (reopened: patch re-check on b12164 + depth profile), 2026-11-11
+- benchmarks/mmvq_b12164.sh, depth_profile.py; scripts/depth_summary.py; docs/depth.md (F10).
+- New worktree ~/llama.cpp-b12164-mmvq (4b77dee05 + patch, build/). Stock = ~/llama.cpp/build.
+- Result: patch still -14..-23% on 6-8 token batches. At 120K the loss is attention; q8_0 KV is
+  4.2x off its bandwidth ideal, f16 at ideal; f16 KV +22-31% at 120K.
+- Candidate list for what next: docs/roadmap.md, top section. Not started: any of them.
+
 ## Waiting on the user
-Project closed (docs/conclusions.md). Possible: the user opens the upstream PR themselves.
+Original project closed (docs/conclusions.md). Next milestone to be chosen from docs/roadmap.md
+(suggested: quantized-KV attention kernel on RDNA4). Possible: the user opens the upstream PR themselves.
 
 ## Next candidate experiments (cheapest first)
 1. Measure the real bar: Qwen3.5-9B GGUF at Q8_0 / Q6_K / Q4_K_M / IQ4_XS in llama.cpp (KLD vs BF16
