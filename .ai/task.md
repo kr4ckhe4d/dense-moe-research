@@ -78,9 +78,14 @@ docs/phase3_findings.md (F5 in findings.md).
   kernel (-37%; diff in git history is not kept).
 - Result: docs/depth.md sections 6-7, F11.
 
+## Done (verify-batch attention cost: mostly negative), 2026-11-11
+- docs/depth.md section 7; experiments/results/fattn/blocks_sweep.txt, depth_blocks2x.jsonl.
+- Tile kernel is compute-bound at 4+ tokens; 2x parallel blocks = -4% per MTP step at 120K (not
+  shipped); WMMA kernel too slow below ~6 tokens. Worktree is back at the two committed patches.
+
 ## Waiting on the user
 Original project closed (docs/conclusions.md). Next milestone to be chosen from docs/roadmap.md
-(suggested: tile attention kernel at 2-8 tokens). Possible: the user opens the upstream PR themselves.
+(suggested: extend the q8_0 attention patch, or lenient draft acceptance). Possible: the user opens the upstream PR themselves.
 
 ## Next candidate experiments (cheapest first)
 1. Measure the real bar: Qwen3.5-9B GGUF at Q8_0 / Q6_K / Q4_K_M / IQ4_XS in llama.cpp (KLD vs BF16

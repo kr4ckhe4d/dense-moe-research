@@ -23,7 +23,7 @@ Candidates, in the order I would run them:
 
 | # | Test | Why it could matter | Cheap first step |
 |---|---|---|---|
-| 1 | **Tile attention kernel at 2-8 tokens** | After the q8_0 fix (below), a 4-token batch still costs 2.0x one token at depth, for f16 and q8_0, though all tokens read the same K/V. Paying once: about +22% for MTP at 120K | Sweep the tile kernel's block configurations for head size 256 at 4-8 columns with `test-backend-ops perf` |
+| 1 | **Small-batch matrix-core attention kernel** | A 4-token verify batch costs 2.0x one token at depth because the tile kernel is compute-bound. Block-count tuning gives only ~4% per MTP step at 120K (tried, `docs/depth.md` section 7); the WMMA kernel is 2.6x the bandwidth ideal at small batches even with more blocks. A proper fix is a new kernel: up to ~+20% for MTP at 120K, uncertain | Profile where the WMMA kernel's flat per-call cost goes |
 | 2 | **Extend the q8_0 attention patch** | It covers q8_0 at head size 256 only. Other head sizes (64, 128) and q4_0 KV still take the slow paths | Add the template instances, re-run the perf cases per shape |
 | 3 | **f16 KV on the two-card daily presets** | Measured on one card only; the presets split the model over both | Re-run `depth_profile.py` with the preset layout |
 | 4 | **Lenient draft acceptance** | Verification accepts only exact matches. Accepting near-ties spends a small quality budget on acceptance instead of on bits; aimed at prose and instructions (~49% acceptance) | Log the target's probability of each rejected draft token; no patch needed to size the gain |

@@ -167,12 +167,33 @@ patch):
   4 of 8 identical, 4 diverge after 200-570 characters. q8_0 against f16 KV diverges at the same
   rate (4 of 8). The old 1-token path also quantized the query to 8 bits; the new one does not.
 
-### 7. What is still open in the kernel
+### 7. Why a verify batch costs more than one token at depth, and what was tried
 
 In the tile kernel, for f16 as well, a 2-token batch costs 1.6x one token and a 4-token batch
-2.0x, although all tokens read the same K/V (809 / 1324 / 1608 us at 120K). That is why an MTP
-verify step still pays for depth about twice what plain decoding does. The tile kernel's block
-configurations for head size 256 at 4-8 columns on RDNA4 are the next thing to look at.
+2.0x, although all tokens read the same K/V (809 / 1324 / 1608 us at 120K). This is compute, not
+memory: the kernel reaches about 7.5 TFLOP/s at 4+ tokens and one token happens to sit at the
+bandwidth limit. Three things were tried on the patched build (temporary switches, not in the
+patch; `experiments/results/fattn/blocks_sweep.txt`):
+
+| change | 1 token | 2 tokens | 4 tokens | 6 tokens |
+|---|---:|---:|---:|---:|
+| baseline, f16 / q8_0 (us per layer at 120K, R9700) | 812 / 912 | 1310 / 1703 | 1588 / 2028 | 2442 / 2785 |
+| fewer columns per block (2 instead of 4-16), f16 | 813 | 1482 | 2524 | 3831 |
+| WMMA (matrix-core) kernel for small batches, f16 | 4265 | 4196 | 4152 | 4081 |
+| WMMA with twice the blocks, f16 | 2265 | | 2174 | 2122 |
+| tile kernel with twice the parallel blocks, f16 / q8_0 | 995 / 896 | 1002 / 1512 | 1450 / 1847 | 2489 / 2824 |
+
+- Narrower blocks are slower, and the WMMA kernel has a flat cost per call that is too high below
+  about 6 tokens.
+- The launcher sizes the number of parallel blocks from an occupancy query that looks low for the
+  128-thread tile configurations (4 and 8 columns). Doubling the blocks helps 2 tokens by 11-23%
+  and 4 tokens by 9%, slows 1-token f16 by 22%, and does nothing at 6 tokens or for prefill.
+- End to end with MTP and q8_0 KV, doubled blocks: 92.3 -> 88.8 ms per step at 120K (-4%),
+  74.7 -> 73.3 at 64K (-2%) (`experiments/results/fattn/depth_blocks2x.jsonl`). Not added to the
+  patch: the gain is small and it would need per-configuration rules measured on more shapes.
+- Getting a verify batch down to the cost of one token would need a matrix-core kernel that is
+  efficient at 2-8 tokens. With twice the blocks the existing one is still 2.6x the bandwidth
+  ideal.
 
 ## What this means
 
@@ -182,8 +203,8 @@ configurations for head size 256 at 4-8 columns on RDNA4 are the next thing to l
 2. **With the attention patch, q8_0 KV is within 5-9% of f16** and keeps its VRAM saving: +24%
    plain and +14-17% with MTP at 120K, nothing lost in short contexts.
 3. **The MMVQ patch is still worth carrying**, and worth 3-4 ms per verify step at any depth.
-4. **Next kernel target:** the tile kernel's cost for 2-8 token batches (section 7). If 4 tokens
-   paid for depth once, an MTP step at 120K with f16 would drop from 88 to about 72 ms (+22%).
+4. **The extra cost of verify batches at depth is not a cheap fix** (section 7): about 4% is
+   available from block-count tuning; more needs a new small-batch matrix-core kernel.
 
 ## Limits
 

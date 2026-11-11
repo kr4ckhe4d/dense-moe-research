@@ -390,3 +390,7 @@ Full report: `docs/depth.md` sections 6-7. Patch: `patches/llama.cpp-rdna4-fattn
 - 27B UD-Q6_K, q8_0 KV, 120K: plain 14.3 -> 17.8 tok/s (+24%), MTP 30.0 -> 34.1 (+14%; +17% over
   fully stock). No change in VRAM or at 2K. q8_0 is now within 5-9% of f16 KV.
 - Still open: in the tile kernel a 4-token batch costs 2.0x one token at depth, for f16 too.
+- Verify-batch cost at depth (section 7): the tile kernel is compute-bound (~7.5 TFLOP/s) at 4+
+  tokens. Narrower blocks and the WMMA kernel are slower at 1-6 tokens; doubling the tile kernel's
+  parallel blocks gives -9% (4 tokens) to -23% (2 tokens) per layer but only -4% per MTP step at
+  120K, so it was not added to the patch.
