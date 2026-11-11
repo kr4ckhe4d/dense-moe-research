@@ -1,0 +1,11 @@
+
+=== wide-s9 ===
+  glob_match          5/8   missed: class, rbracket, random300
+  shlex_split         5/7   missed: single_q, double_q
+  urljoin             3/9   missed: absolute, netloc, abs_path, rel_path, dotdot, dot_only
+  textwrap            4/6   missed: empty, random60
+  csv_rows            7/7   clean
+  add_months          6/6   clean
+  parse_qsl           7/7   clean
+
+wide-s9: 37/50 checks pass (74.0%) | 3/7 tasks fully clean

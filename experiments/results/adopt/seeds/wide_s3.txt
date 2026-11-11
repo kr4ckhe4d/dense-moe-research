@@ -1,0 +1,11 @@
+
+=== wide-s3 ===
+  glob_match          6/8   missed: unterm, random300
+  shlex_split         7/7   clean
+  urljoin             2/9   missed: abs_path, rel_path, dotdot, empty, query, fragment, dot_only
+  textwrap            0/6   DID NOT RUN — timeout
+  csv_rows            7/7   clean
+  add_months          6/6   clean
+  parse_qsl           6/7   missed: empty
+
+wide-s3: 34/50 checks pass (68.0%) | 3/7 tasks fully clean

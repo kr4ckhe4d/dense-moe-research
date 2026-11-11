@@ -446,4 +446,6 @@ Full report: `docs/depth.md` section 10. Patch: `patches/llama.cpp-rdna4-fattn-q
 - 27B UD-Q6_K, MTP, q8_0 KV at 120K: 34.0 -> 44.8 tok/s on the R9700 (92.6 -> 68.5 ms per verify
   step), 32.8 -> 44.0 on both cards; stock is 29.1 / 28.5. Plain decoding +13-15%.
 - q8_0 KV is now faster than f16 KV (68.5 against 72.8 ms per step at 120K).
-- Tests 4295/4295 on both cards. Code-quality suite on this build: not finished yet.
+- Tests 4295/4295 on both cards. Code-quality suite on the daily preset, 12 seeds:
+  36.2 +- 3.5 against 38.0 +- 3.3 before and 37.3 +- 4.7 stock; temperature 0: 42 (stock 44).
+  No difference shown within the suite's ~3-point resolution.

@@ -1,0 +1,11 @@
+
+=== wide-s6 ===
+  glob_match          8/8   clean
+  shlex_split         7/7   clean
+  urljoin             5/9   missed: rel_path, dotdot, fragment, dot_only
+  textwrap            2/6   missed: simple, longword, empty, random60
+  csv_rows            7/7   clean
+  add_months          0/6   DID NOT RUN — IndentationError: expected an indented block after 'if' statement on line 17
+  parse_qsl           6/7   missed: empty
+
+wide-s6: 35/50 checks pass (70.0%) | 3/7 tasks fully clean

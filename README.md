@@ -7,6 +7,9 @@ inference: **llama.cpp GGUF quantization** (Q8_0 to Q3_K_M) and **MTP speculativ
 Quality is measured as **KL divergence** against the BF16 model, using the same protocol as
 `llama-perplexity`.
 
+The sparse route failed, so the later work makes the practical route faster: speculative decoding
+for **Qwen3.5-9B** and **Qwen3.8-27B**, and llama.cpp kernel patches for RDNA4.
+
 Negative results are reported as negative results.
 
 ## Bottom line
@@ -20,26 +23,70 @@ Follow-up tests are listed in [docs/roadmap.md](docs/roadmap.md).
   - Turn on speculative decoding: the model's MTP head, or a trained DFlash drafter when the model
     is fully in VRAM.
   - Add n-gram drafting for editing.
+  - On RDNA4, patch two llama.cpp kernels (below). They matter most with speculative decoding
+    and at long context.
 - **Measured speeds:**
   - 9B: 132-163 tok/s on a 12-16 GB card.
   - 27B: 71 tok/s on 16 GB, 62.6 tok/s at near-lossless quality on 32 GB.
-- **RDNA4 kernel fix:** a 7-line change to llama.cpp's MMVQ kernel makes speculative verification
-  14-23% faster on K-quants
-  ([patch](patches/llama.cpp-rdna4-mmvq-multicol.patch), [evidence](docs/upstream_mmvq.md)).
+  - 27B at 120K tokens of context, near-lossless quant, MTP: 44.8 tok/s with both patches, 29.1
+    on stock llama.cpp.
+- **RDNA4 kernel fixes for llama.cpp** (neither is upstream):
+  - **Weights (MMVQ):** a 7-line change makes speculative verification 14-23% faster on K-quants
+    ([patch](patches/llama.cpp-rdna4-mmvq-multicol.patch), [evidence](docs/upstream_mmvq.md)).
+  - **Attention at depth:** at 120K tokens the 27B loses its speed to attention over the KV cache,
+    not to draft acceptance. The patch reads a q8_0 / q4_0 KV cache directly and scans each K/V
+    head once per verify batch, so a 4-token batch costs what one token does. A q8_0 KV cache is
+    then faster than f16 as well as 3.3 GiB smaller
+    ([patch](patches/llama.cpp-rdna4-fattn-q8-tile.patch), [docs/depth.md](docs/depth.md)).
+  - Without the patches, an f16 KV cache is the faster choice at long context (+22-31% at 120K).
+- **Lenient draft acceptance (lossy, opt-in, not recommended for daily use):** keeping drafted
+  tokens the target rates at 30% or more of its top choice gives +10% at temperature 0 and +17%
+  at temperature 1.0. The code-quality suite shows no loss within noise; nothing else was
+  checked ([docs/lenient.md](docs/lenient.md)).
 
-- **Follow-up (2026-11-11), long context:** at 120K tokens the 27B loses its speed to attention
-  over the KV cache, not to draft acceptance. A q8_0 KV cache is 2.2x slower to attend over than
-  f16 on RDNA4; switching to f16 gives +22-31% at 120K for 3.3 GiB ([docs/depth.md](docs/depth.md)).
-- **RDNA4 attention fix for q8_0 KV:** a change to llama.cpp's tile attention kernel
-  makes decode at 120K +24% faster (plain) and +14-17% (MTP) with a q8_0 KV cache, within 5-9% of
-  f16 at 3.3 GiB less VRAM; q4_0 KV and head sizes 64 / 128 are covered too (+94% plain at 120K with q4_0) ([patch](patches/llama.cpp-rdna4-fattn-q8-tile.patch)).
-- **Lenient draft acceptance (lossy, opt-in):** keeping drafted tokens the target rates at 30%
-  or more of its top choice gives +10% at temperature 0 and +17% at temperature 1.0; the
-  code-quality suite shows no loss within noise ([docs/lenient.md](docs/lenient.md)).
-- **Verify batches at depth (2026-11-11):** the matrix-core attention kernel scanned each K/V
-  head three times for the 27B and ran too few blocks. Fixed in the attention patch: with MTP and
-  q8_0 KV at 120K context the 27B goes from 34.0 to 44.8 tok/s (stock llama.cpp: 29.1)
-  ([docs/depth.md](docs/depth.md) section 10).
+## Best setup so far
+
+Qwen3.8-27B at UD-Q6_K, fully in VRAM, with speculative decoding and the two kernel patches.
+Everything in the loop is lossless against the quantized model: a drafted token is kept only if
+it is the token the 27B picks.
+
+```mermaid
+flowchart TB
+    PROMPT["prompt + generated tokens"] --> DRAFT
+
+    subgraph loop["one decode step (llama-server)"]
+        direction TB
+        DRAFT["Drafter proposes the next tokens<br/>MTP head, 3 tokens (any context)<br/>or DFlash drafter, 5 tokens (short context, model fully in VRAM)<br/>+ n-gram lookup for editing"]
+        VERIFY["27B verifies the last token + drafts in one batch<br/>Qwen3.8-27B UD-Q6_K, all layers on GPU"]
+        ACCEPT{"keep drafts up to the first one<br/>the 27B would not have picked"}
+        DRAFT --> VERIFY --> ACCEPT
+    end
+
+    subgraph kernels["inside the verify batch: RDNA4 kernel patches"]
+        direction LR
+        MMVQ["weights x 2-8 tokens<br/>MMVQ patch: 3-4 ms less per step"]
+        FATTN["attention over the KV cache (q8_0)<br/>attention patch: one scan per K/V head,<br/>dequantized on load"]
+    end
+
+    VERIFY -.-> MMVQ
+    VERIFY -.-> FATTN
+    FATTN <--> KV[("KV cache, q8_0<br/>up to 128K tokens")]
+    ACCEPT -->|"about 3 tokens per step"| OUT["output tokens"]
+    OUT -->|"next step"| PROMPT
+```
+
+| 27B UD-Q6_K, MTP, q8_0 KV | 2K context | 32K | 64K | 120K |
+|---|---:|---:|---:|---:|
+| stock llama.cpp b12164, tok/s | 55.5 | 43.7 | 37.3 | 29.1 |
+| both patches, tok/s | 58.3 | 53.6 | 47.5 | 44.8 |
+
+- One R9700 (32 GB), 26.3 GiB at 131K context. Splitting the model over both cards gives the
+  same speeds within 2% ([docs/depth.md](docs/depth.md) sections 8 and 10).
+- At short context the DFlash drafter is faster than MTP (62.6 against 51.2 tok/s, measured on
+  the older b11434 with the MMVQ patch, [docs/fast27b.md](docs/fast27b.md)). It was not
+  re-measured on b12164 or with the attention patch.
+- On a 16 GB card the same loop runs at IQ4_XS with MTP (71 tok/s); what to run per GPU size is
+  in [docs/conclusions.md](docs/conclusions.md).
 
 ## Key results
 
@@ -121,7 +168,7 @@ review: [docs/phase3_research.md](docs/phase3_research.md).
   MoE).
 - Details: [docs/dflash.md](docs/dflash.md).
 
-## How the experiments fit together
+## How the sparsity experiments fit together
 
 Calibration data fits everything; every quality number is scored on held-out text against one
 llama.cpp BF16 reference, so PyTorch sparse variants and GGUF quants share one table. Details and
@@ -183,9 +230,11 @@ flowchart TB
 ## Hardware and software
 
 - **GPUs:** AMD Radeon RX 9070 XT (16 GB) and Radeon AI PRO R9700 (32 GB), RDNA4 (gfx1201).
-- **Software:** ROCm 7.2, PyTorch 2.14.1+rocm7.2, Triton, llama.cpp b11434 (ROCm/HIP backend).
+- **Software:** ROCm 7.2, PyTorch 2.14.1+rocm7.2, Triton, llama.cpp b11434 (ROCm/HIP backend);
+  b12164 for the long-context work in `docs/depth.md` and `docs/lenient.md`.
 - **Model:** [Qwen/Qwen3.5-9B](https://huggingface.co/Qwen/Qwen3.5-9B), revision `c202236`. It's a
   hybrid Gated DeltaNet / attention model with SwiGLU FFNs and an MTP head.
+  The speed work also uses Qwen3.8-27B GGUFs (UD-Q6_K, IQ4_XS).
 
 ## Setup
 
@@ -214,11 +263,12 @@ benchmarks/gguf_mtp.sh 0 Q8_0 IQ4_XS && .venv/bin/python scripts/gguf_summary.py
 
 | Doc | Contents |
 |---|---|
-| [docs/findings.md](docs/findings.md) | All measured results (F0 to F11) |
+| [docs/findings.md](docs/findings.md) | All measured results (F0 to F15) |
 | [docs/writeup.md](docs/writeup.md) | Result summary and a runbook of every command run |
 | [docs/phase3_findings.md](docs/phase3_findings.md) | Phase 3: block granularity, TEAL/WINA/CATS predictors, MTP union, speed ceilings |
 | [docs/conclusions.md](docs/conclusions.md) | Closing summary: answers, what to run per GPU size, limits |
 | [docs/depth.md](docs/depth.md) | Decode speed at 2K-120K context: attention cost, q8_0 vs f16 KV, MTP at depth; attention kernel patches for small batches and q8_0 / q4_0 KV; MMVQ patch on b12164 |
+| [docs/lenient.md](docs/lenient.md) | Lenient draft acceptance: speed against the share of non-top tokens, code-quality check |
 | [docs/dflash.md](docs/dflash.md) | DFlash: 9B drafter, long context, sampling, editing, concurrency, offload; MMVQ patch on other models |
 | [docs/upstream_mmvq.md](docs/upstream_mmvq.md) | Evidence pack for upstreaming the RDNA4 MMVQ patch (b11719) |
 | [docs/fast27b.md](docs/fast27b.md) | 27B on one 32 GB card: DFlash2 vs MTP, quants, RDNA4 MMVQ kernel tuning |

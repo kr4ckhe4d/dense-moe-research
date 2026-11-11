@@ -369,8 +369,12 @@ disabled and reproduces the earlier patched numbers;
 - Greedy output: 2-4 of 8 generations per config are identical to the run with the rule off; the
   rest diverge, as they do between q8_0 and f16 KV (section 6). The kernels round differently.
 - Peak VRAM is unchanged (within 45 MiB).
-- Code quality on this build: the 12-seed suite of section 8 was still running when this was
-  written; no result yet.
+- Code quality on this build, same suite and preset as section 8 (50 checks, both cards, MTP,
+  q8_0 KV): 12 seeds 36.2 +- 3.5 (43 30 34 34 34 35 41 39 37 35 36 37), against 38.0 +- 3.3 for
+  the patch before this section and 37.3 +- 4.7 for stock. Temperature 0: 42 (stock 44, before
+  41). The 1.8-point gap to the earlier patch is about 1.3 standard errors, so no difference is
+  shown, and none is ruled out below about 3 points. Answers that did not run: 5 of 84 (3 and 3
+  before). `experiments/results/adopt/seeds/wide_*.txt`.
 
 ## What this means
 

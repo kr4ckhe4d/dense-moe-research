@@ -1,0 +1,11 @@
+
+=== wide-s2 ===
+  glob_match          8/8   clean
+  shlex_split         7/7   clean
+  urljoin             2/9   missed: absolute, netloc, abs_path, rel_path, dotdot, fragment, dot_only
+  textwrap            0/6   DID NOT RUN — IndentationError: expected an indented block after 'else' statement on line 211
+  csv_rows            0/7   missed: plain, quoted, dquote, embed_nl, crlf, empty_f, no_trail
+  add_months          6/6   clean
+  parse_qsl           7/7   clean
+
+wide-s2: 30/50 checks pass (60.0%) | 4/7 tasks fully clean

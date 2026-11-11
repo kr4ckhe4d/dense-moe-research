@@ -1,0 +1,11 @@
+
+=== wide-s7 ===
+  glob_match          8/8   clean
+  shlex_split         7/7   clean
+  urljoin             5/9   missed: rel_path, dotdot, fragment, dot_only
+  textwrap            1/6   missed: simple, collapse, longword, empty, random60
+  csv_rows            7/7   clean
+  add_months          6/6   clean
+  parse_qsl           7/7   clean
+
+wide-s7: 41/50 checks pass (82.0%) | 5/7 tasks fully clean
