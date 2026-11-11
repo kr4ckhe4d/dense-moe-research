@@ -31,6 +31,8 @@ Mean of the two tasks (explain, code), 256 tokens each, temperature 0. Depth is 
 | plain-f16kv | 24.4 | 22.6 | 21.0 | 18.7 |
 | mtp3-f16kv | 55.8 | 49.4 | 38.8 | 35.5 |
 | mtp3-f16kv-patched | 59.1 | 49.9 | 44.3 | 36.9 |
+| plain-q8kv-fattn | 24.3 | 22.3 | 20.5 | 17.8 |
+| mtp3-q8kv-fattn | 59.0 | 45.9 | 43.2 | 34.1 |
 
 ### ms per target evaluation (plain: per token; MTP: per verify step)
 
@@ -43,6 +45,8 @@ Mean of the two tasks (explain, code), 256 tokens each, temperature 0. Depth is 
 | plain-f16kv | 40.9 | 44.1 | 47.4 | 53.4 |
 | mtp3-f16kv | 59.4 | 66.9 | 74.4 | 88.2 |
 | mtp3-f16kv-patched | 56.4 | 63.5 | 70.8 | 84.3 |
+| plain-q8kv-fattn | 41.0 | 44.8 | 48.6 | 56.1 |
+| mtp3-q8kv-fattn | 56.8 | 67.1 | 74.7 | 92.3 |
 
 ### Tokens per target evaluation
 
@@ -53,6 +57,7 @@ Mean of the two tasks (explain, code), 256 tokens each, temperature 0. Depth is 
 | mtp3-f16kv-64k | 3.33 | 3.31 | 2.90 |  |
 | mtp3-f16kv | 3.33 | 3.31 | 2.90 | 3.14 |
 | mtp3-f16kv-patched | 3.34 | 3.18 | 3.14 | 3.12 |
+| mtp3-q8kv-fattn | 3.36 | 3.09 | 3.24 | 3.16 |
 
 ### Cost of depth: ms added per target evaluation, relative to 2K
 
@@ -67,6 +72,8 @@ Mean of the two tasks (explain, code), 256 tokens each, temperature 0. Depth is 
 | plain-f16kv | 0.0 | 3.2 | 6.5 | 12.5 |
 | mtp3-f16kv | 0.0 | 7.4 | 15.0 | 28.7 |
 | mtp3-f16kv-patched | 0.0 | 7.1 | 14.3 | 27.8 |
+| plain-q8kv-fattn | 0.0 | 3.7 | 7.6 | 15.0 |
+| mtp3-q8kv-fattn | 0.0 | 10.3 | 17.9 | 35.5 |
 | ideal, f16 KV | 0.0 | 3.2 | 6.4 | 12.3 |
 | ideal, q8_0 KV | 0.0 | 1.7 | 3.4 | 6.6 |
 
@@ -81,6 +88,8 @@ Mean of the two tasks (explain, code), 256 tokens each, temperature 0. Depth is 
 | plain-f16kv | 822 | 750 | 615 | 489 |
 | mtp3-f16kv | 869 | 778 | 624 | 486 |
 | mtp3-f16kv-patched | 865 | 780 | 624 | 487 |
+| plain-q8kv-fattn | 840 | 750 | 610 | 482 |
+| mtp3-q8kv-fattn | 863 | 774 | 618 | 480 |
 
 ### Peak VRAM (MiB) and per-task rows
 
@@ -140,3 +149,19 @@ Mean of the two tasks (explain, code), 256 tokens each, temperature 0. Depth is 
 | mtp3-f16kv-patched | 30306 | code | 64107 | 49.5 | 183 / 214 |
 | mtp3-f16kv-patched | 30306 | explain | 122601 | 33.9 | 167 / 262 |
 | mtp3-f16kv-patched | 30306 | code | 122600 | 39.9 | 180 / 223 |
+| plain-q8kv-fattn | 25325 | explain | 2010 | 24.3 | 0 / 0 |
+| plain-q8kv-fattn | 25325 | code | 2009 | 24.3 | 0 / 0 |
+| plain-q8kv-fattn | 25325 | explain | 32867 | 22.3 | 0 / 0 |
+| plain-q8kv-fattn | 25325 | code | 32866 | 22.3 | 0 / 0 |
+| plain-q8kv-fattn | 25325 | explain | 64108 | 20.5 | 0 / 0 |
+| plain-q8kv-fattn | 25325 | code | 64107 | 20.5 | 0 / 0 |
+| plain-q8kv-fattn | 25325 | explain | 122601 | 17.8 | 0 / 0 |
+| plain-q8kv-fattn | 25325 | code | 122600 | 17.8 | 0 / 0 |
+| mtp3-q8kv-fattn | 26948 | explain | 2010 | 54.7 | 174 / 242 |
+| mtp3-q8kv-fattn | 26948 | code | 2009 | 63.3 | 185 / 209 |
+| mtp3-q8kv-fattn | 26948 | explain | 32867 | 43.8 | 171 / 251 |
+| mtp3-q8kv-fattn | 26948 | code | 32866 | 48.0 | 175 / 237 |
+| mtp3-q8kv-fattn | 26948 | explain | 64108 | 39.7 | 170 / 250 |
+| mtp3-q8kv-fattn | 26948 | code | 64107 | 46.7 | 183 / 214 |
+| mtp3-q8kv-fattn | 26948 | explain | 122601 | 31.7 | 169 / 256 |
+| mtp3-q8kv-fattn | 26948 | code | 122600 | 36.4 | 180 / 223 |

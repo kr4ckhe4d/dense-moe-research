@@ -69,9 +69,18 @@ docs/phase3_findings.md (F5 in findings.md).
   4.2x off its bandwidth ideal, f16 at ideal; f16 KV +22-31% at 120K.
 - Candidate list for what next: docs/roadmap.md, top section. Not started: any of them.
 
+## Done (q8_0 KV attention kernel), 2026-11-11
+- patches/llama.cpp-rdna4-fattn-q8-tile.patch (tile kernel dequantizes q8_0 while loading tiles;
+  D=256, 1-8 tokens). Applied in ~/llama.cpp-b12164-mmvq (unstaged; MMVQ patch staged), build/.
+- Bench: test-backend-ops perf cases added by the patch (-p 'hsk=256,hsv=256,nh=4,nr23=\[6,1\]');
+  results in experiments/results/fattn/, scripts/fattn_summary.py; depth_profile configs *-fattn.
+- Tried first and dropped: thread-count tuning of the vec kernel (-16%), GQA columns in the vec
+  kernel (-37%; diff in git history is not kept).
+- Result: docs/depth.md sections 6-7, F11.
+
 ## Waiting on the user
 Original project closed (docs/conclusions.md). Next milestone to be chosen from docs/roadmap.md
-(suggested: quantized-KV attention kernel on RDNA4). Possible: the user opens the upstream PR themselves.
+(suggested: tile attention kernel at 2-8 tokens). Possible: the user opens the upstream PR themselves.
 
 ## Next candidate experiments (cheapest first)
 1. Measure the real bar: Qwen3.5-9B GGUF at Q8_0 / Q6_K / Q4_K_M / IQ4_XS in llama.cpp (KLD vs BF16

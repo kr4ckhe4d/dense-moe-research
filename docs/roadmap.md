@@ -15,12 +15,16 @@ Done (`docs/depth.md`, F10):
   time goes to attention. The q8_0 KV cache takes 4.2x its bandwidth-ideal time, f16 runs at the
   ideal. Switching to f16 KV: +22-31% at 120K for 3.3 GiB.
 
+- **Quantized-KV attention kernel** (`docs/depth.md` section 6, F11,
+  `patches/llama.cpp-rdna4-fattn-q8-tile.patch`). The tile kernel now reads q8_0 K/V directly:
+  one layer at 120K 2073 -> 944 us; 27B with q8_0 KV at 120K +24% plain, +14-17% with MTP.
+
 Candidates, in the order I would run them:
 
 | # | Test | Why it could matter | Cheap first step |
 |---|---|---|---|
-| 1 | **Quantized-KV attention kernel on RDNA4** | q8_0 KV adds 27.7 ms per token at 120K where one read of the cache at peak bandwidth is 6.6 ms. At the ideal: +44% plain decode at 120K, and better than f16 at half the VRAM. `fattn-vec.cuh` has RDNA-specific thread counts for quantized K | Confirm which kernel runs; sweep its thread counts with a depth-only benchmark, as was done for MMVQ |
-| 2 | **Attention in the verify batch** | An MTP verify step pays for depth 1.7-2.3x what one token does, though its 4 tokens read the same cache. Paying once: +22% at 120K with f16 KV | Time attention alone for 1-8 query tokens at 120K |
+| 1 | **Tile attention kernel at 2-8 tokens** | After the q8_0 fix (below), a 4-token batch still costs 2.0x one token at depth, for f16 and q8_0, though all tokens read the same K/V. Paying once: about +22% for MTP at 120K | Sweep the tile kernel's block configurations for head size 256 at 4-8 columns with `test-backend-ops perf` |
+| 2 | **Extend the q8_0 attention patch** | It covers q8_0 at head size 256 only. Other head sizes (64, 128) and q4_0 KV still take the slow paths | Add the template instances, re-run the perf cases per shape |
 | 3 | **f16 KV on the two-card daily presets** | Measured on one card only; the presets split the model over both | Re-run `depth_profile.py` with the preset layout |
 | 4 | **Lenient draft acceptance** | Verification accepts only exact matches. Accepting near-ties spends a small quality budget on acceptance instead of on bits; aimed at prose and instructions (~49% acceptance) | Log the target's probability of each rejected draft token; no patch needed to size the gain |
 | 5 | **Per-context neuron subsets** | One neuron subset per kind of text (code, prose, JSON), chosen per neuron from recorded usage. Unlike per-token masks it is stable across the verify batch, so it could stack with MTP / DFlash. Ceiling ~1.2x on top of quantization. Untested: only whole-expert static pruning was measured (KLD 0.395 at 75%) | Offline: per-domain subsets at 50% / 75% kept, same KLD protocol, plus routing of held-out prompts. Needs activations regenerated (~half a day in all). Pass bar: near IQ4_XS's 0.018 at 50% |

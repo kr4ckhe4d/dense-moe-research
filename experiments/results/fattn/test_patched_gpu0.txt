@@ -1,0 +1,2 @@
+  Device description: AMD Radeon RX 9070 XT
+  4072/4072 tests passed

@@ -1,0 +1,2 @@
+  Device description: AMD Radeon AI PRO R9700
+  4072/4072 tests passed

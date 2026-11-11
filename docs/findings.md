@@ -375,3 +375,18 @@ Full report: `docs/depth.md`. Qwen3.8-27B UD-Q6_K fully on the R9700, llama.cpp 
   36.9 with the patch. Costs 3.3 GiB at 131,072 context; no gain in an empty context.
 - A verify step pays for depth 1.7-2.3x what one token does (f16: 28.8 vs 12.5 ms at 120K).
 - Prefill falls from ~860 to ~485 tok/s between 2K and 120K, the same for both KV types.
+
+
+## F11. RDNA4 attention kernel for q8_0 KV (2026-11-11)
+
+Full report: `docs/depth.md` sections 6-7. Patch: `patches/llama.cpp-rdna4-fattn-q8-tile.patch`
+(b12164).
+- Cause of F10's slow q8_0 KV: 1-2 token batches used the vector kernel, which scans each K/V
+  head once per query head (6x on the 27B); 3-8 token batches converted the layer's whole K/V to
+  f16 on every call.
+- The patch makes the tile kernel dequantize q8_0 while loading tiles (head size 256, 1-8 tokens).
+  One layer at 122,624 rows, R9700: 1 token 2073 -> 944 us (f16: 809), 4 tokens 3061 -> 2064.
+  Same on the RX 9070 XT. `test-backend-ops -o FLASH_ATTN_EXT` 4072/4072 on both cards.
+- 27B UD-Q6_K, q8_0 KV, 120K: plain 14.3 -> 17.8 tok/s (+24%), MTP 30.0 -> 34.1 (+14%; +17% over
+  fully stock). No change in VRAM or at 2K. q8_0 is now within 5-9% of f16 KV.
+- Still open: in the tile kernel a 4-token batch costs 2.0x one token at depth, for f16 too.

@@ -8,7 +8,9 @@ Model: Qwen3.8-27B UD-Q6_K, fully on the Radeon AI PRO R9700 (32 GB). llama.cpp 
 (`4b77dee05`), 731 commits after the b11434 used for everything else in this repo.
 
 Code: `benchmarks/mmvq_b12164.sh`, `benchmarks/depth_profile.py`, `scripts/depth_summary.py` ->
-`experiments/results/depth/summary.md`.
+`experiments/results/depth/summary.md`; `scripts/fattn_summary.py` ->
+`experiments/results/fattn/summary.md`. Patches: `patches/llama.cpp-rdna4-mmvq-multicol.patch`,
+`patches/llama.cpp-rdna4-fattn-q8-tile.patch`.
 
 ## Method
 
@@ -116,24 +118,81 @@ Decode tok/s:
 Prefill tok/s over each depth range: 820-870 up to 2K, 750-780 up to 32K, 610-625 up to 64K,
 480-490 up to 120K, the same for q8_0 and f16 (the batch kernels convert K/V to f16).
 
+### 6. A kernel change that makes q8_0 KV nearly as fast as f16
+
+Why q8_0 was slow: for 1-2 token batches with quantized K/V, llama.cpp uses the vector attention
+kernel, which runs one block per query head. This model has 24 query heads over 4 K/V heads, so
+each K/V head is scanned 6 times. For 3-8 tokens it uses the tile kernel, but first converts the
+whole K/V of the layer to an f16 copy on every call.
+
+`patches/llama.cpp-rdna4-fattn-q8-tile.patch` (139 lines, on top of b12164) lets the tile kernel
+read q8_0 directly: each tile is dequantized to f16 as it is loaded into shared memory, so there
+is no conversion pass and query heads that share a K/V head share one scan. It applies to q8_0
+K and V with head size 256, batches of 1-8 tokens, on HIP; the routing of 1-2 token batches to it
+is limited to RDNA4.
+
+One attention layer of this shape at 122,624 KV rows, R9700 (us per call;
+`experiments/results/fattn/summary.md` has 32K / 64K and the RX 9070 XT):
+
+| tokens | f16 | q8_0 stock | q8_0 patched | change |
+|---:|---:|---:|---:|---:|
+| 1 | 809 | 2073 | 944 | -54% |
+| 2 | 1324 | 2077 | 1729 | -17% |
+| 4 | 1608 | 3061 | 2064 | -33% |
+| 6 | 2467 | 3924 | 2831 | -28% |
+
+- The RX 9070 XT gains the same (1 token -57%, 4 tokens -33%). f16 timings are unchanged.
+- `test-backend-ops -o FLASH_ATTN_EXT`: 4072 of 4072 pass on both cards, including new cases for
+  this shape (q8_0 and q4_0, with and without sinks, several sequences).
+- Patched q8_0 is still 1.1-1.4x f16's time. The rest is dequantization and the tile kernel's own
+  batch scaling (next point).
+
+End to end, 27B UD-Q6_K with q8_0 KV (ms per target evaluation; both MTP rows include the MMVQ
+patch):
+
+| config | 2K | 32K | 64K | 120K | tok/s at 120K | peak VRAM |
+|---|---:|---:|---:|---:|---:|---:|
+| plain, stock | 41.7 | 49.2 | 56.2 | 69.4 | 14.3 | 24.7 GiB |
+| plain, attention patch | 41.0 | 44.8 | 48.6 | 56.1 | 17.8 (+24%) | 24.7 GiB |
+| plain, f16 KV (for reference) | 40.9 | 44.1 | 47.4 | 53.4 | 18.7 | 28.0 GiB |
+| MTP, MMVQ patch | 57.0 | 68.4 | 80.3 | 104.7 | 30.0 | 26.3 GiB |
+| MTP, MMVQ + attention patch | 56.8 | 67.1 | 74.7 | 92.3 | 34.1 (+14%) | 26.3 GiB |
+| MTP, MMVQ patch, f16 KV (for reference) | 56.4 | 63.5 | 70.8 | 84.3 | 36.9 | 29.6 GiB |
+
+- Against the fully stock build, MTP with q8_0 KV at 120K goes from 29.1 to 34.1 tok/s (+17%).
+- q8_0 KV now costs 5% (plain) to 9% (MTP) against f16 at 120K, down from 24-30%, for 3.3 GiB
+  less VRAM.
+- Greedy output: all 8 MTP generations are identical to the build without the attention patch
+  (verify batches used the tile kernel before too; only the conversion moved). Plain decoding:
+  4 of 8 identical, 4 diverge after 200-570 characters. q8_0 against f16 KV diverges at the same
+  rate (4 of 8). The old 1-token path also quantized the query to 8 bits; the new one does not.
+
+### 7. What is still open in the kernel
+
+In the tile kernel, for f16 as well, a 2-token batch costs 1.6x one token and a 4-token batch
+2.0x, although all tokens read the same K/V (809 / 1324 / 1608 us at 120K). That is why an MTP
+verify step still pays for depth about twice what plain decoding does. The tile kernel's block
+configurations for head size 256 at 4-8 columns on RDNA4 are the next thing to look at.
+
 ## What this means
 
-1. **For the 27B at long context, use an f16 KV cache where the VRAM allows** (+3.3 GiB at 128K):
-   drop `-ctk q8_0 -ctv q8_0`. The daily presets use q8_0 and split the model over both cards;
-   that layout was not measured here.
-2. **Two kernel targets, both lossless, both larger than the remaining MMVQ gap:**
-   - *Quantized-KV attention on RDNA4.* At its ideal, q8_0 would add 6.6 ms at 120K instead of
-     27.7: plain 48 ms per token instead of 69 (+44%), and better than f16 at half the VRAM.
-   - *Attention in the verify batch.* If 4 tokens paid for depth once, an MTP step at 120K with
-     f16 would drop from 88 to about 72 ms (+22%).
+1. **Without rebuilding llama.cpp: use an f16 KV cache for the 27B at long context** where the
+   VRAM allows (+3.3 GiB at 128K): drop `-ctk q8_0 -ctv q8_0`. The daily presets use q8_0 and
+   split the model over both cards; that layout was not measured here.
+2. **With the attention patch, q8_0 KV is within 5-9% of f16** and keeps its VRAM saving: +24%
+   plain and +14-17% with MTP at 120K, nothing lost in short contexts.
 3. **The MMVQ patch is still worth carrying**, and worth 3-4 ms per verify step at any depth.
+4. **Next kernel target:** the tile kernel's cost for 2-8 token batches (section 7). If 4 tokens
+   paid for depth once, an MTP step at 120K with f16 would drop from 88 to about 72 ms (+22%).
 
 ## Limits
 
 - One model, one card, one build. The prompt is C++ source with two tasks; 256 tokens per row.
 - Only MTP at draft length 3. DFlash at depth on this build was not measured (the drafter GGUF is
   no longer on disk).
-- The kernel explanation for q8_0 is from reading the code. The "ideal" rows assume the whole
-  cache is read once per evaluation at 640 GB/s.
+- The "ideal" rows assume the whole cache is read once per evaluation at 640 GB/s.
+- The attention patch covers q8_0 K and V at head size 256 only (other quantized KV types and head
+  sizes keep the old paths), was measured on RDNA4 only, and has no llama-perplexity check: that
+  tool decodes in large batches, which do not use the changed path.
 - Stock is `~/llama.cpp/build`: 4b77dee05 with local changes to two server source files that do
   not touch the kernels.
