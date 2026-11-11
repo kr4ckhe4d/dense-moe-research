@@ -125,11 +125,11 @@ kernel, which runs one block per query head. This model has 24 query heads over 
 each K/V head is scanned 6 times. For 3-8 tokens it uses the tile kernel, but first converts the
 whole K/V of the layer to an f16 copy on every call.
 
-`patches/llama.cpp-rdna4-fattn-q8-tile.patch` (139 lines, on top of b12164) lets the tile kernel
+`patches/llama.cpp-rdna4-fattn-q8-tile.patch` (on top of b12164) lets the tile kernel
 read q8_0 directly: each tile is dequantized to f16 as it is loaded into shared memory, so there
 is no conversion pass and query heads that share a K/V head share one scan. It applies to q8_0
 K and V with head size 256, batches of 1-8 tokens, on HIP; the routing of 1-2 token batches to it
-is limited to RDNA4.
+is limited to RDNA4. Section 9 extends it to q4_0 and to head sizes 64 and 128.
 
 One attention layer of this shape at 122,624 KV rows, R9700 (us per call;
 `experiments/results/fattn/summary.md` has 32K / 64K and the RX 9070 XT):
@@ -242,6 +242,60 @@ of local-llm-benchmarks on the preset `qwen3.8-27B-q6-128k-nothink`.
 - The suite's spread between seeds is large: a difference under about 4 points between two
   single runs of it means nothing.
 
+### 9. The attention patch extended to q4_0 KV and head sizes 64 and 128
+
+The same patch file now also reads q4_0 K/V directly and covers head sizes 64, 128 and 256. For
+these shapes all batches of 1-8 tokens go to the tile kernel on RDNA4. Before, 1-2 tokens used
+the vector kernel, and larger ones the tile or the matrix-core kernel after converting all of
+K/V to f16. Tried both routings for the batches the matrix-core kernel used to take: the tile
+kernel without conversion was faster in every quantized case measured.
+
+One attention layer at 122,624 KV rows, R9700, us per call, stock -> patched
+(`experiments/results/fattn/summary.md` has 32K and the RX 9070 XT, which is the same within 6%):
+
+| head size (K/V heads x Q per K/V) | KV type | 1 token | 2 tokens | 4 tokens | 8 tokens |
+|---|---|---|---|---|---|
+| 256 (4 x 6) | q4_0 | 4355 -> 964 | 9162 -> 1785 | 2982 -> 2088 | 3849 -> 2836 |
+| 128 (8 x 4) | q8_0 | 915 -> 453 | 1679 -> 591 | 3048 -> 1322 | 3095 -> 2659 |
+| 128 (8 x 4) | q4_0 | 1516 -> 441 | 1869 -> 600 | 3027 -> 1539 | 3081 -> 2644 |
+| 64 (8 x 2) | q8_0 | 266 -> 231 | 351 -> 248 | 2621 -> 362 | 2473 -> 794 |
+| 64 (8 x 2) | q4_0 | 252 -> 192 | 329 -> 235 | 2581 -> 437 | 2439 -> 781 |
+
+- q4_0 at head size 256 was the worst stock case (2 tokens: 9.2 ms per layer); it now costs the
+  same as q8_0.
+- At head sizes 64 and 128 the stock 4-8 token cost was dominated by the f16 conversion
+  (~2.5-3 ms per call at this depth). Without it a 4-token batch is 2.3-7x faster.
+- At 8 tokens and head size 128 the gain is small (3095 -> 2659): the tile kernel is
+  compute-bound there (section 7), and f16 K/V on the matrix-core kernel takes 907 us.
+- For 1-2 tokens at head sizes 64 and 128 the patched quantized path is faster than stock f16
+  K/V (128: 453 against 808 us; 64: 231 against 404). The f16 path was not changed; routing f16
+  decode at these head sizes to the tile kernel is an untested follow-up.
+- `test-backend-ops -o FLASH_ATTN_EXT`: 4232/4232 on both cards (160 new cases). Error against
+  the CPU reference for the new shapes is at most 1.4e-5 (threshold 5e-4;
+  `experiments/results/fattn/nmse_ext_*.txt`).
+- f16 cases, patched / stock: 0.97-1.03 on the RX 9070 XT. On the R9700 0.92-1.21 over two
+  passes, with every case outside 0.95-1.05 either a 4096-token batch or a 20-60 us call; the
+  code path for them is the same in both builds.
+
+**End to end, q4_0 KV on the 27B** (UD-Q6_K, R9700, same protocol as section 2;
+`experiments/results/fattn/depth_q4kv.jsonl`). Decode tok/s:
+
+| config | 2K | 32K | 64K | 120K |
+|---|---:|---:|---:|---:|
+| plain, q4_0 KV, stock | 23.2 | 17.0 | 13.1 | 9.1 |
+| plain, q4_0 KV, patched | 24.2 | 22.1 | 20.4 | 17.7 |
+| MTP, q4_0 KV, stock | 55.2 | 44.9 | 38.2 | 30.0 |
+| MTP, q4_0 KV, patched | 58.5 | 48.6 | 42.3 | 33.3 |
+
+- Plain decoding at 120K: +94%. With MTP: +11% (104.0 -> 92.4 ms per verify step); verify
+  batches of 4 already used the tile kernel, so only the conversion is saved. The patched build
+  also has the MMVQ patch, worth 3-4 ms of each MTP step.
+- q4_0 KV now runs at the speed of q8_0 KV (plain 17.7 against 17.8 at 120K) and uses 2.0 GiB
+  less than q8_0 at 131K context (24.3 against 26.3 GiB peak with MTP). Its quality cost was
+  not measured here.
+- No model on disk has head size 64 or 128 (Qwen3.5-9B and Qwen3.8-27B use 256, Gemma 4 12B
+  512 / 256), so those shapes have kernel timings only.
+
 ## What this means
 
 1. **Without rebuilding llama.cpp: use an f16 KV cache for the 27B at long context** where the
@@ -261,8 +315,9 @@ of local-llm-benchmarks on the preset `qwen3.8-27B-q6-128k-nothink`.
 - Only MTP at draft length 3. DFlash at depth on this build was not measured (the drafter GGUF is
   no longer on disk).
 - The "ideal" rows assume the whole cache is read once per evaluation at 640 GB/s.
-- The attention patch covers q8_0 K and V at head size 256 only (other quantized KV types and head
-  sizes keep the old paths), was measured on RDNA4 only, and has no llama-perplexity check: that
-  tool decodes in large batches, which do not use the changed path.
+- The attention patch covers q8_0 and q4_0 K and V (both the same type) at head sizes 64, 128
+  and 256; other types and sizes keep the old paths. Head sizes 64 and 128 have kernel timings
+  and correctness tests only, no end-to-end run. Measured on RDNA4 only. No llama-perplexity
+  check: that tool decodes in large batches, which do not use the changed path.
 - Stock is `~/llama.cpp/build`: 4b77dee05 with local changes to two server source files that do
   not touch the kernels.

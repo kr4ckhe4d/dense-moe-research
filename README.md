@@ -30,9 +30,9 @@ Follow-up tests are listed in [docs/roadmap.md](docs/roadmap.md).
 - **Follow-up (2026-11-11), long context:** at 120K tokens the 27B loses its speed to attention
   over the KV cache, not to draft acceptance. A q8_0 KV cache is 2.2x slower to attend over than
   f16 on RDNA4; switching to f16 gives +22-31% at 120K for 3.3 GiB ([docs/depth.md](docs/depth.md)).
-- **RDNA4 attention fix for q8_0 KV:** a 139-line change to llama.cpp's tile attention kernel
+- **RDNA4 attention fix for q8_0 KV:** a change to llama.cpp's tile attention kernel
   makes decode at 120K +24% faster (plain) and +14-17% (MTP) with a q8_0 KV cache, within 5-9% of
-  f16 at 3.3 GiB less VRAM ([patch](patches/llama.cpp-rdna4-fattn-q8-tile.patch)).
+  f16 at 3.3 GiB less VRAM; q4_0 KV and head sizes 64 / 128 are covered too (+94% plain at 120K with q4_0) ([patch](patches/llama.cpp-rdna4-fattn-q8-tile.patch)).
 
 ## Key results
 

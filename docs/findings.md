@@ -407,3 +407,14 @@ Full report: `docs/depth.md` section 8. Data: `experiments/results/adopt/`.
   38.0 +- 3.3. No measurable difference; the suite's seed spread is 3-5 points.
 - One attention call against the CPU reference (NMSE): q8_0 stock 2.3e-6, q8_0 patched 5.5e-6,
   f16 K/V 1.3e-5 on both builds.
+
+## F13. Attention patch extended to q4_0 KV and head sizes 64 / 128 (2026-11-11)
+
+Full report: `docs/depth.md` section 9. Same patch file as F11.
+- One layer at 122,624 rows, R9700, stock -> patched: head 256 q4_0 1 token 4355 -> 964 us,
+  2 tokens 9162 -> 1785; head 128 q8_0 1 token 915 -> 453, 4 tokens 3048 -> 1322; head 64 q8_0
+  4 tokens 2621 -> 362. RX 9070 XT the same within 6%. 4232/4232 attention tests on both cards.
+- 27B with q4_0 KV at 120K: plain 9.1 -> 17.7 tok/s (+94%), MTP 30.0 -> 33.3 (+11%). q4_0 KV now
+  runs as fast as q8_0 KV.
+- Not covered: end-to-end runs at head sizes 64 / 128 (no such model on disk), the quality cost
+  of q4_0 KV, f16 decode at head sizes 64 / 128 (slower than the patched quantized path).

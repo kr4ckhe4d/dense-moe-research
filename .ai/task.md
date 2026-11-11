@@ -90,9 +90,16 @@ docs/phase3_findings.md (F5 in findings.md).
   12 seeds (37.3 vs 38.0 of 50, sd 3-5).
 - Not done: the user's daily presets still point at the stock build.
 
+## Done (attention patch: q4_0 KV, head sizes 64 / 128), 2026-11-11
+- patches/llama.cpp-rdna4-fattn-q8-tile.patch regenerated (loader takes the K/V type; RDNA4
+  routes all 1-8 token quantized batches at head 64/128/256 to the tile kernel).
+- docs/depth.md section 9 (F13); experiments/results/fattn/ (summary.md, depth_q4kv.jsonl).
+- Worktrees ~/llama.cpp-b12164-mmvq (both patches, built) and ~/llama.cpp-b12164-errcheck
+  (stock kernels + the patch's test cases) still exist.
+
 ## Waiting on the user
 Original project closed (docs/conclusions.md). Next milestone to be chosen from docs/roadmap.md
-(suggested: extend the q8_0 attention patch, or lenient draft acceptance). Possible: the user opens the upstream PR themselves.
+(suggested: lenient draft acceptance). Possible: the user opens the upstream PR themselves.
 
 ## Next candidate experiments (cheapest first)
 1. Measure the real bar: Qwen3.5-9B GGUF at Q8_0 / Q6_K / Q4_K_M / IQ4_XS in llama.cpp (KLD vs BF16
