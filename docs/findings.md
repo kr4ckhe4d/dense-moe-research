@@ -464,4 +464,18 @@ Full report: `docs/shortlist.md`. Patch: `patches/llama.cpp-mtp-draft-shortlist.
   prose +5%, instructions +6%).
 - Output text identical on 6 of 6 prompts (draft 3 and draft 4); 2075 of 2086 accepted drafts
   kept. Offline coverage: 97.4% of accepted drafts at 65,536 tokens, 90.9% at 32,768.
-- Not yet measured: 120K context, the two-card daily preset. Single runs per cell.
+- At 120K context (two tasks): draft 3 41.0 / 51.2 -> 43.6 / 53.8 tok/s; shortlist with draft 4
+  44.7 / 58.1 (+9% / +13% over today's default). The saving per step is the same 4-5 ms.
+- Not yet measured: the two-card daily preset. Single runs per cell.
+
+## F17. Prior-work search: every method here existed before (2026-11-12)
+
+Full list with links: `docs/prior_work.md`. Searched after the work was done.
+- The RDNA4 attention fix (F15) and the MMVQ rows-per-block fix (F8) were shipped by the fork
+  stew675/llama-cpp-rdna-boosts on 2026-09-26 and 2026-09-29, on the same model and cards.
+- The drafter shortlist (F16) is FR-Spec / VocabTrim (2025) and llama.cpp PRs #31031 and #29143.
+- Lenient acceptance (F14) is in the family of Medusa's typical acceptance and MARS.
+- Training-free dense-to-MoE (F3) has CMoE, ExpertWeaver and MLPMoE.
+- No measurement was found of training-free activation masks under an MTP verify batch (F5).
+- The fork's numbers come from other machines and builds; it has not been run here.
+

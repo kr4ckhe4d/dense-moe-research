@@ -41,6 +41,12 @@ Done (`docs/depth.md`, F10):
   65,536-token shortlist makes it 1.56 ms with the output unchanged: +7% at draft 3, +12% at
   draft 4, +16% at draft 8 with p-min 0.5 (six-prompt mean 52.4 -> 60.7 tok/s). Open: the daily
   two-card preset, a Q4 copy of the shortlist rows, adding context tokens to the list, DFlash.
+- **Prior-work search** (`docs/prior_work.md`, F17): the two RDNA4 kernel fixes and the drafter
+  shortlist had been shipped or proposed elsewhere first.
+
+**Next (2026-11-12):** run the current release of stew675/llama-cpp-rdna-boosts on this machine
+against stock and against this repo's patched build (same prompts, depths and the two-card daily
+preset), before any further kernel or drafting work. The candidates below are on hold until then.
 
 Candidates, in the order I would run them:
 

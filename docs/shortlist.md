@@ -11,7 +11,13 @@ tokens. Scoring a 65,536-token shortlist instead cuts a drafted token from 3.13 
 decode is 7% faster at the same draft length. Cheaper drafts make longer drafts pay: with
 draft 4 the six-prompt mean goes from 52.4 to 58.7 tok/s (+12%), with draft 8 and a confidence
 cutoff to 60.7 (+16%; +36-38% on math and JSON, +5-6% on prose and instructions).
-Long context (120K) is not measured yet.
+At 120K tokens of context the gain is +5-6% at draft 3 and +9-13% at draft 4.
+
+**Prior work:** the method is not new. FR-Spec and VocabTrim (2025) restrict the drafter to a
+frequency-ranked vocabulary subset, llama.cpp PR #31031 (opened 2026-10-23) adds it as
+`--spec-draft-vocab`, and PR #29143 and the llama-cpp-rdna-boosts fork have their own versions.
+This page is a second implementation and measurement, made before those were found
+(`docs/prior_work.md`).
 
 ## Where a decode step goes
 
@@ -104,9 +110,25 @@ Shortlist size at 2K context, two tasks, 256 tokens (`sweep.jsonl`), tok/s expla
 
 ## At depth
 
-Not measured yet: the 2K / 120K run was still going when this was written. The saving per
-draft token does not depend on context, so the relative gain should be smaller at 120K, where
-a step takes 68 ms instead of 57.
+Two tasks, 256 tokens, q8_0 KV, R9700 (`experiments/results/shortlist/depth.jsonl`), decode
+tok/s explain / code and ms per step:
+
+| | 2K tok/s | 2K ms | 120K tok/s | 120K ms |
+|---|---:|---:|---:|---:|
+| full vocabulary, draft 3 | 54.8 / 63.2 | 56.8 | 41.0 / 51.2 | 68.4 |
+| full vocabulary, draft 4 | 56.1 / 70.9 | 61.3 | 41.4 / 53.9 | 76.6 |
+| shortlist 65K, draft 3 | 58.4 / 68.1 | 52.7 | 43.6 / 53.8 | 64.2 |
+| shortlist 65K, draft 4 | 60.9 / 77.9 | 55.7 | 44.7 / 58.1 | 71.1 |
+| shortlist 65K, draft 6, p-min 0.5 | 62.3 / 86.7 | 58.5 / 61.3 | 46.1 / 53.1 | 73.8 / 76.2 |
+
+- The shortlist saves the same 4-5 ms per step at 120K as at 2K, so the relative gain is
+  smaller there: +5-6% at draft 3.
+- Shortlist with draft 4 against today's default (full vocabulary, draft 3): +11% / +23% at
+  2K, +9% / +13% at 120K.
+- At 120K each extra draft position costs about 7 ms (attention over the cache for the drafter
+  and the wider verify batch) against 3 ms at 2K, so draft 6 no longer beats draft 4 on code.
+- Accepted drafts are the same with and without the shortlist in 7 of 8 cells (182 against 183
+  in the other).
 
 ## Limits
 

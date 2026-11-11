@@ -4,6 +4,11 @@ The project closed on 2026-10-24 (`docs/conclusions.md`). This reopens one quest
 its speeds were measured in short contexts, but agent sessions run at 100K+ tokens, where the
 27B keeps well under half its empty-context rate. Where does that time go?
 
+**Prior work (added 2026-11-12):** the fork llama-cpp-rdna-boosts found and fixed the section 10
+problem (GQA 6 scanned three times on the tile kernel) on 2026-09-26 and the MMVQ rows-per-block
+setting on 2026-09-29, both before this work, which did not know of it. See
+`docs/prior_work.md`. The fork was not run here.
+
 Model: Qwen3.8-27B UD-Q6_K, fully on the Radeon AI PRO R9700 (32 GB). llama.cpp b12164
 (`4b77dee05`), 731 commits after the b11434 used for everything else in this repo.
 

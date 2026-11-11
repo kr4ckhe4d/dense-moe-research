@@ -10,7 +10,9 @@ Quality is measured as **KL divergence** against the BF16 model, using the same 
 The sparse route failed, so the later work makes the practical route faster: speculative decoding
 for **Qwen3.5-9B** and **Qwen3.8-27B**, and llama.cpp kernel patches for RDNA4.
 
-Negative results are reported as negative results.
+Negative results are reported as negative results. None of the methods is new: each was
+published or shipped elsewhere first, and this repo's numbers are independent measurements
+([docs/prior_work.md](docs/prior_work.md)).
 
 ## Bottom line
 
@@ -30,7 +32,9 @@ Follow-up tests are listed in [docs/roadmap.md](docs/roadmap.md).
   - 27B: 71 tok/s on 16 GB, 62.6 tok/s at near-lossless quality on 32 GB.
   - 27B at 120K tokens of context, near-lossless quant, MTP: 44.8 tok/s with both patches, 29.1
     on stock llama.cpp.
-- **RDNA4 kernel fixes for llama.cpp** (neither is upstream):
+- **RDNA4 kernel fixes for llama.cpp** (neither is in upstream llama.cpp; the public fork
+  [llama-cpp-rdna-boosts](https://github.com/stew675/llama-cpp-rdna-boosts) shipped both fixes
+  weeks earlier, see [docs/prior_work.md](docs/prior_work.md)):
   - **Weights (MMVQ):** a 7-line change makes speculative verification 14-23% faster on K-quants
     ([patch](patches/llama.cpp-rdna4-mmvq-multicol.patch), [evidence](docs/upstream_mmvq.md)).
   - **Attention at depth:** at 120K tokens the 27B loses its speed to attention over the KV cache,
@@ -39,7 +43,8 @@ Follow-up tests are listed in [docs/roadmap.md](docs/roadmap.md).
     then faster than f16 as well as 3.3 GiB smaller
     ([patch](patches/llama.cpp-rdna4-fattn-q8-tile.patch), [docs/depth.md](docs/depth.md)).
   - Without the patches, an f16 KV cache is the faster choice at long context (+22-31% at 120K).
-- **Cheaper drafting (lossless, llama.cpp patch, not upstream):** each drafted token read the
+- **Cheaper drafting (lossless, llama.cpp patch; the method is FR-Spec / VocabTrim, and
+  llama.cpp PR #31031 proposes the same):** each drafted token read the
   whole 1.29 GiB output layer. Letting the drafter score a 65,536-token shortlist halves the cost
   of a drafted token and makes longer drafts pay: 27B six-prompt mean 52.4 -> 58.7 tok/s at
   draft 4, 60.7 at draft 8 with a confidence cutoff; output identical
@@ -268,11 +273,12 @@ benchmarks/gguf_mtp.sh 0 Q8_0 IQ4_XS && .venv/bin/python scripts/gguf_summary.py
 
 | Doc | Contents |
 |---|---|
-| [docs/findings.md](docs/findings.md) | All measured results (F0 to F16) |
+| [docs/findings.md](docs/findings.md) | All measured results (F0 to F17) |
 | [docs/writeup.md](docs/writeup.md) | Result summary and a runbook of every command run |
 | [docs/phase3_findings.md](docs/phase3_findings.md) | Phase 3: block granularity, TEAL/WINA/CATS predictors, MTP union, speed ceilings |
 | [docs/conclusions.md](docs/conclusions.md) | Closing summary: answers, what to run per GPU size, limits |
 | [docs/depth.md](docs/depth.md) | Decode speed at 2K-120K context: attention cost, q8_0 vs f16 KV, MTP at depth; attention kernel patches for small batches and q8_0 / q4_0 KV; MMVQ patch on b12164 |
+| [docs/prior_work.md](docs/prior_work.md) | Earlier papers, llama.cpp PRs and the RDNA fork that already had these methods (searched 2026-11-12) |
 | [docs/lenient.md](docs/lenient.md) | Lenient draft acceptance: speed against the share of non-top tokens, code-quality check |
 | [docs/shortlist.md](docs/shortlist.md) | Where a decode step goes; a vocabulary shortlist for the MTP drafter, draft length and confidence cutoff |
 | [docs/dflash.md](docs/dflash.md) | DFlash: 9B drafter, long context, sampling, editing, concurrency, offload; MMVQ patch on other models |

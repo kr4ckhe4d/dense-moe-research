@@ -163,6 +163,13 @@ Qwen3.8-27B UD-Q6_K, R9700, six prompts x 512 tokens, temperature 0, harmonic me
 
 ## Related upstream PRs (checked 2026-10-24)
 
+**Added 2026-11-12:** the check below covered upstream PRs only. The fork
+[stew675/llama-cpp-rdna-boosts](https://github.com/stew675/llama-cpp-rdna-boosts) had already
+shipped more rows per block for 2-8 columns on RDNA4 on 2026-09-29
+([issue #56](https://github.com/stew675/llama-cpp-rdna-boosts/issues/56)), tuned per weight
+type. Anyone opening an upstream PR should credit it and check with its authors first
+(`docs/prior_work.md`).
+
 - **#24386** "ggml: tune RDNA4 MMVQ warps for K-quants" (open). Changes the RDNA4 `ncols_dst == 1`
   warps for Q4_K/Q6_K. It is a different branch of the same function, so the two don't overlap
   logically, but they may conflict textually.

@@ -11,6 +11,10 @@ instructions and code explanation, +2-3% on math and JSON) and +17% at temperatu
 code-quality suite shows no loss within its noise. 1-6% of output tokens are then not the
 target's first choice.
 
+**Prior work (added 2026-11-12):** relaxed acceptance rules are published: typical acceptance in
+Medusa, a logit-ratio rule in MARS, and a 2026 theory paper that covers ratio rules like this
+one (`docs/prior_work.md`).
+
 ## Method
 
 - `patches/llama.cpp-spec-lenient.patch` (on b12164, `common/sampling.cpp`): two environment
