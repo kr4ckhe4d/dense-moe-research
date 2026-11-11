@@ -449,3 +449,19 @@ Full report: `docs/depth.md` section 10. Patch: `patches/llama.cpp-rdna4-fattn-q
 - Tests 4295/4295 on both cards. Code-quality suite on the daily preset, 12 seeds:
   36.2 +- 3.5 against 38.0 +- 3.3 before and 37.3 +- 4.7 stock; temperature 0: 42 (stock 44).
   No difference shown within the suite's ~3-point resolution.
+
+## F16. MTP drafter with a vocabulary shortlist: drafted token 3.13 -> 1.56 ms, output unchanged (2026-11-12)
+
+Full report: `docs/shortlist.md`. Patch: `patches/llama.cpp-mtp-draft-shortlist.patch`.
+- Step split, 27B UD-Q6_K, MTP draft 3, 2K context, R9700, patched build: target one token
+  40.9 ms, 4-token verify batch +4.4, three drafts 9.4, drafter catch-up 1.0, rest 1.7; 57.4 ms.
+- A drafted token costs 3.13 ms at every draft position: the MTP block (335 MiB) plus the whole
+  output layer (1,288 MiB, Q8_0) at the card's bandwidth. Sampling is 0.002 ms.
+- With the drafter scoring 65,536 tokens (frequency-ranked from 9.5M tokens of local text) a
+  drafted token costs 1.56 ms. 340 MiB more VRAM. The target's output layer is untouched.
+- Six prompts, 512 tokens, temperature 0 (harmonic mean tok/s): draft 3 52.4 -> 56.3; draft 4
+  53.9 -> 58.7; draft 8 with p-min 0.5 60.7 (+16% over today's default; math +36%, JSON +38%,
+  prose +5%, instructions +6%).
+- Output text identical on 6 of 6 prompts (draft 3 and draft 4); 2075 of 2086 accepted drafts
+  kept. Offline coverage: 97.4% of accepted drafts at 65,536 tokens, 90.9% at 32,768.
+- Not yet measured: 120K context, the two-card daily preset. Single runs per cell.
