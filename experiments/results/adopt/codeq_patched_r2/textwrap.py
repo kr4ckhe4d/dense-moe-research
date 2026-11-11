@@ -1,0 +1,409 @@
+def wrap_(text, width):
+    # Expand tabs: replace each tab with spaces to reach next multiple of 8
+    expanded = []
+    col = 0
+    for ch in text:
+        if ch == '\t':
+            spaces = 8 - (col % 8)
+            expanded.append(' ' * spaces)
+            col += spaces
+        else:
+            expanded.append(ch)
+            col += 1
+    text = ''.join(expanded)
+    
+    # Split into words: each whitespace character becomes one space, runs are NOT collapsed
+    # But we need to identify "words" as sequences of non-whitespace characters
+    # Whitespace between words will be handled as separators
+    
+    # First, let's parse the text into tokens: words and whitespace runs
+    # But the spec says "each whitespace character becomes one space (runs are NOT collapsed)"
+    # This means if there are multiple spaces, they stay as multiple spaces
+    # However, "whitespace at each line break is dropped (trailing whitespace of a line and leading whitespace of the next; leading whitespace of the whole text is kept)"
+    
+    # Let me re-read: "tabs are expanded and each whitespace character becomes one space (runs are NOT collapsed)"
+    # So after tab expansion, all whitespace chars (space, \n, \r, \f, \v) become single spaces? No, "each whitespace character becomes one space" means each whitespace char is replaced by a space.
+    # "runs are NOT collapsed" means if there are 3 spaces, they stay as 3 spaces.
+    
+    # Wait, but then "whitespace at each line break is dropped" - this refers to the wrapping process.
+    
+    # Let me think about this differently. The textwrap module with default options:
+    # 1. Expands tabs
+    # 2. Splits on whitespace, but keeps track of whitespace
+    # 3. When wrapping, it drops whitespace at line breaks
+    
+    # Actually, let me look at what textwrap.wrap does with default options:
+    # - expand_tabs=True: tabs are expanded
+    # - replace_whitespace=True: all whitespace is replaced with a single space
+    # - collapse_whitespace=True: runs of whitespace are collapsed to a single space
+    # - break_long_words=True: long words are broken
+    # - break_on_hyphens=True: hyphens can be break points
+    
+    # But the problem says: "each whitespace character becomes one space (runs are NOT collapsed)"
+    # This contradicts the default textwrap behavior where collapse_whitespace=True.
+    # So the problem is defining its own "default options" that differ from actual textwrap defaults.
+    
+    # Let me re-read the problem statement carefully:
+    # "reproducing textwrap.wrap(text, width) with default options FROM SCRATCH"
+    # "Default options mean: tabs are expanded and each whitespace character becomes one space (runs are NOT collapsed), whitespace at each line break is dropped (trailing whitespace of a line and leading whitespace of the next; leading whitespace of the whole text is kept), words longer than width ARE broken, and the result is a list of lines none longer than width (except where a single unbreakable chunk forces it)."
+    
+    # So the "default options" as defined by the problem are:
+    # 1. Tabs are expanded
+    # 2. Each whitespace character becomes one space (runs are NOT collapsed) - so multiple spaces stay as multiple spaces
+    # 3. Whitespace at line breaks is dropped: trailing whitespace of a line and leading whitespace of the next line are dropped, but leading whitespace of the whole text is kept
+    # 4. Words longer than width are broken
+    # 5. Result is a list of lines, none longer than width (except unbreakable chunks)
+    
+    # So the algorithm:
+    # 1. Expand tabs
+    # 2. Replace each whitespace char with a space (but don't collapse runs)
+    # 3. Split into words (sequences of non-space characters) and keep track of whitespace between them
+    # 4. Wrap the text, dropping whitespace at line breaks
+    
+    # Let me implement this step by step.
+    
+    # Step 1: Expand tabs
+    expanded = []
+    col = 0
+    for ch in text:
+        if ch == '\t':
+            spaces = 8 - (col % 8)
+            expanded.append(' ' * spaces)
+            col += spaces
+        else:
+            expanded.append(ch)
+            col += 1
+    text = ''.join(expanded)
+    
+    # Step 2: Replace each whitespace character with a space
+    # Whitespace characters: space, \n, \r, \f, \v
+    processed = []
+    for ch in text:
+        if ch in ' \n\r\f\v':
+            processed.append(' ')
+        else:
+            processed.append(ch)
+    text = ''.join(processed)
+    
+    # Step 3: Parse into words and whitespace
+    # A word is a sequence of non-space characters
+    # Whitespace is one or more spaces
+    
+    tokens = []  # list of (type, value) where type is 'word' or 'space'
+    i = 0
+    n = len(text)
+    while i < n:
+        if text[i] == ' ':
+            j = i
+            while j < n and text[j] == ' ':
+                j += 1
+            tokens.append(('space', text[i:j]))
+            i = j
+        else:
+            j = i
+            while j < n and text[j] != ' ':
+                j += 1
+            tokens.append(('word', text[i:j]))
+            i = j
+    
+    # Step 4: Wrap
+    # We need to build lines, each at most `width` characters long
+    # Leading whitespace of the whole text is kept
+    # Whitespace at line breaks is dropped (trailing whitespace of current line, leading whitespace of next)
+    
+    lines = []
+    current_line = []
+    current_len = 0
+    
+    # We'll iterate through tokens and build lines
+    # When we need to break a line, we drop trailing whitespace from current line and leading whitespace from next
+    
+    # Let me think about this more carefully.
+    # The text is a sequence of words and whitespace.
+    # We want to pack words into lines, with whitespace between them.
+    # When a line is full, we break, dropping the whitespace that would have been at the end of the line and the beginning of the next.
+    
+    # Actually, let me think of it as: we have a sequence of items (words and whitespace).
+    # We add items to the current line until adding the next item would exceed width.
+    # When we break, we remove trailing whitespace from the current line and leading whitespace from the remaining items.
+    
+    # Let me use a different approach: build the full text with spaces, then wrap it.
+    
+    # Actually, let me just simulate the wrapping process.
+    
+    # Start with an empty current line.
+    # For each token:
+    #   If it's a word:
+    #     If current line is empty, add the word (even if it exceeds width, it will be broken later)
+    #     If current line is not empty, check if adding a space + word fits. If not, break the line.
+    #   If it's whitespace:
+    #     Add it to the current line if it fits, otherwise it will be dropped at the line break.
+    
+    # Hmm, this is getting complex. Let me think of a simpler approach.
+    
+    # Alternative: Build the full string, then wrap it character by character, but respecting word boundaries.
+    
+    # Let me try yet another approach:
+    # 1. Split the text into words (non-space sequences) and remember the whitespace between them.
+    # 2. Use a greedy algorithm to pack words into lines.
+    
+    # Let me extract words and the whitespace between them.
+    words = []
+    for t in tokens:
+        if t[0] == 'word':
+            words.append(t[1])
+    
+    # Now I need to know the whitespace between consecutive words.
+    # Let me re-parse to get this.
+    
+    # Actually, let me just work with the tokens directly.
+    
+    # I'll use a pointer to iterate through tokens.
+    # current_line: list of characters
+    # current_len: length of current_line
+    
+    # When I need to break a line:
+    # - Remove trailing spaces from current_line
+    # - Start a new line
+    # - Skip leading spaces in the remaining tokens
+    
+    # Let me implement this.
+    
+    lines = []
+    current_line = []
+    current_len = 0
+    i = 0
+    n_tokens = len(tokens)
+    
+    while i < n_tokens:
+        token_type, token_val = tokens[i]
+        
+        if token_type == 'word':
+            word = token_val
+            
+            # Check if this word fits in the current line
+            if current_len == 0:
+                # Current line is empty, add the word
+                # But the word might be longer than width, so we need to break it
+                if len(word) <= width:
+                    current_line.append(word)
+                    current_len += len(word)
+                    i += 1
+                else:
+                    # Word is longer than width, break it
+                    # Add as much as fits
+                    if width > 0:
+                        current_line.append(word[:width])
+                        current_len = width
+                        # The rest of the word will be handled in the next iteration
+                        # We need to modify the token to be the remaining part
+                        tokens[i] = ('word', word[width:])
+                        # Don't increment i, we'll process the remaining part next
+                    else:
+                        # width is 0, this is a degenerate case
+                        current_line.append(word)
+                        current_len += len(word)
+                        i += 1
+            else:
+                # Current line is not empty
+                # Check if adding a space + word fits
+                # But wait, there might be whitespace between the last word and this word
+                # Let me check if the previous token was whitespace
+                
+                # Actually, I need to handle whitespace tokens properly.
+                # Let me reconsider.
+                
+                # If the previous token was a word, there should be whitespace between them.
+                # But I'm processing tokens in order, so if there's whitespace, it would have been processed already.
+                
+                # Let me re-think the algorithm.
+                
+                # I think the issue is that I'm not handling whitespace tokens correctly.
+                # Let me process whitespace tokens by adding them to the current line if they fit.
+                
+                # For now, let me just add the word with a space before it if the current line is not empty.
+                # But I need to account for the whitespace that was between the words.
+                
+                # This is getting complicated. Let me try a different approach.
+                
+                # Let me just build the full text and then wrap it.
+                
+                pass
+        
+        elif token_type == 'space':
+            # Add whitespace to current line if it fits
+            if current_len + len(token_val) <= width:
+                current_line.append(token_val)
+                current_len += len(token_val)
+                i += 1
+            else:
+                # Whitespace doesn't fit, it will be dropped at the line break
+                # Don't increment i, it will be skipped when we break the line
+                pass
+    
+    # This approach is getting messy. Let me start over with a cleaner implementation.
+    
+    # Clean implementation:
+    
+    # Step 1: Expand tabs
+    expanded = []
+    col = 0
+    for ch in text:
+        if ch == '\t':
+            spaces = 8 - (col % 8)
+            expanded.append(' ' * spaces)
+            col += spaces
+        else:
+            expanded.append(ch)
+            col += 1
+    text = ''.join(expanded)
+    
+    # Step 2: Replace each whitespace character with a space
+    processed = []
+    for ch in text:
+        if ch in ' \n\r\f\v':
+            processed.append(' ')
+        else:
+            processed.append(ch)
+    text = ''.join(processed)
+    
+    # Step 3: Split into words and whitespace
+    # Use regex-like parsing
+    import re
+    # But we can't import re? The problem says "without importing textwrap", so we can import other modules.
+    # Actually, let me just do it manually to be safe.
+    
+    # Split into tokens
+    tokens = []
+    i = 0
+    n = len(text)
+    while i < n:
+        if text[i] == ' ':
+            j = i
+            while j < n and text[j] == ' ':
+                j += 1
+            tokens.append(('space', text[i:j]))
+            i = j
+        else:
+            j = i
+            while j < n and text[j] != ' ':
+                j += 1
+            tokens.append(('word', text[i:j]))
+            i = j
+    
+    # Step 4: Wrap
+    lines = []
+    current_line = []
+    current_len = 0
+    i = 0
+    n_tokens = len(tokens)
+    
+    while i < n_tokens:
+        token_type, token_val = tokens[i]
+        
+        if token_type == 'word':
+            word = token_val
+            
+            if current_len == 0:
+                # Current line is empty
+                if len(word) <= width:
+                    current_line.append(word)
+                    current_len += len(word)
+                    i += 1
+                else:
+                    # Word is longer than width
+                    if width > 0:
+                        current_line.append(word[:width])
+                        current_len = width
+                        tokens[i] = ('word', word[width:])
+                        # Don't increment i
+                    else:
+                        current_line.append(word)
+                        current_len += len(word)
+                        i += 1
+            else:
+                # Current line is not empty
+                # Need to add a space before the word (from the whitespace between words)
+                # But we need to check if there's whitespace between the last word and this word
+                # Let me check the previous token
+                if i > 0 and tokens[i-1][0] == 'space':
+                    # There's whitespace before this word
+                    space_len = len(tokens[i-1][1])
+                    # Check if space + word fits
+                    if current_len + space_len + len(word) <= width:
+                        current_line.append(' ' * space_len)
+                        current_line.append(word)
+                        current_len += space_len + len(word)
+                        i += 1
+                    else:
+                        # Doesn't fit, break the line
+                        # Remove trailing spaces from current line
+                        while current_line and current_line[-1] == ' ':
+                            current_line.pop()
+                            current_len -= 1
+                        lines.append(''.join(current_line))
+                        current_line = []
+                        current_len = 0
+                        # Skip the whitespace token
+                        i += 1
+                        # Now try to add the word to the new line
+                        # This will be handled in the next iteration
+                else:
+                    # No whitespace before this word (shouldn't happen normally)
+                    if current_len + len(word) <= width:
+                        current_line.append(word)
+                        current_len += len(word)
+                        i += 1
+                    else:
+                        # Break the line
+                        while current_line and current_line[-1] == ' ':
+                            current_line.pop()
+                            current_len -= 1
+                        lines.append(''.join(current_line))
+                        current_line = []
+                        current_len = 0
+                        # Try to add the word to the new line
+                        if len(word) <= width:
+                            current_line.append(word)
+                            current_len += len(word)
+                            i += 1
+                        else:
+                            if width > 0:
+                                current_line.append(word[:width])
+                                current_len = width
+                                tokens[i] = ('word', word[width:])
+                            else:
+                                current_line.append(word)
+                                current_len += len(word)
+                                i += 1
+        
+        elif token_type == 'space':
+            # Whitespace token
+            if current_len + len(token_val) <= width:
+                current_line.append(token_val)
+                current_len += len(token_val)
+                i += 1
+            else:
+                # Whitespace doesn't fit, it will be dropped
+                # Don't increment i, it will be skipped when we break the line
+                # But we need to handle this case
+                # Actually, if whitespace doesn't fit, we should break the line
+                # Remove trailing spaces from current line
+                while current_line and current_line[-1] == ' ':
+                    current_line.pop()
+                    current_len -= 1
+                lines.append(''.join(current_line))
+                current_line = []
+                current_len = 0
+                # Skip the whitespace
+                i += 1
+    
+    # Add the last line
+    if current_line:
+        # Remove trailing spaces
+        while current_line and current_line[-1] == ' ':
+            current_line.pop()
+            current_len -= 1
+        lines.append(''.join(current_line))
+    
+    return lines

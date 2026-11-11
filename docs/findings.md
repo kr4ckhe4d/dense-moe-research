@@ -394,3 +394,16 @@ Full report: `docs/depth.md` sections 6-7. Patch: `patches/llama.cpp-rdna4-fattn
   tokens. Narrower blocks and the WMMA kernel are slower at 1-6 tokens; doubling the tile kernel's
   parallel blocks gives -9% (4 tokens) to -23% (2 tokens) per layer but only -4% per MTP step at
   120K, so it was not added to the patch.
+
+
+## F12. Patched build on the two-card daily preset: same gains, no quality change (2026-11-11)
+
+Full report: `docs/depth.md` section 8. Data: `experiments/results/adopt/`.
+- 27B UD-Q6_K split over both cards, q8_0 KV, stock -> MMVQ + attention patches: plain at 120K
+  13.8 -> 17.1 tok/s (+24%); MTP 28.5 -> 32.7 at 120K (+15%), 55.0 -> 57.7 at 2K (+5%). VRAM
+  unchanged. f16 KV on stock: 34.9 at 120K for 2.8 GiB more.
+- Code-quality suite (50 checks) on the preset: temperature 0 gives 44 (stock) and 41 (patched),
+  one fixed answer per task each. Over 12 seeds at the preset sampler: 37.3 +- 4.7 and
+  38.0 +- 3.3. No measurable difference; the suite's seed spread is 3-5 points.
+- One attention call against the CPU reference (NMSE): q8_0 stock 2.3e-6, q8_0 patched 5.5e-6,
+  f16 K/V 1.3e-5 on both builds.

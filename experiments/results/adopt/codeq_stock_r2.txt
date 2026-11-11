@@ -1,0 +1,15 @@
+# build: stock (version: 0.9.0-dev (build 12165, commit 4b77dee05)), 2026-11-11T09:57:50+08:00
+
+=== stock-r2-t0 ===
+  glob_match          8/8   clean
+  shlex_split         5/7   missed: single_q, double_q
+  urljoin             8/9   missed: dot_only
+  textwrap            4/6   missed: empty, random60
+  csv_rows            7/7   clean
+  add_months          6/6   clean
+  parse_qsl           6/7   missed: empty
+
+stock-r2-t0: 44/50 checks pass (88.0%) | 3/7 tasks fully clean
+1.50.520.809 I slot print_timing: id  0 | task 1610 | draft acceptance = 0.94231 (  294 accepted /   312 generated), mean len =  3.83
+1.54.628.882 I slot print_timing: id  1 | task 1717 | draft acceptance = 0.76720 (  145 accepted /   189 generated), mean len =  3.30
+2.00.988.477 I slot print_timing: id  2 | task 1783 | draft acceptance = 0.86333 (  259 accepted /   300 generated), mean len =  3.59

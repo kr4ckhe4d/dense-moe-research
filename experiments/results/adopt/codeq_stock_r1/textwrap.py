@@ -1,0 +1,257 @@
+def wrap_(text, width):
+    # Expand tabs: replace each tab with spaces to reach next multiple of 8
+    expanded = []
+    col = 0
+    for ch in text:
+        if ch == '\t':
+            spaces = 8 - (col % 8)
+            expanded.append(' ' * spaces)
+            col += spaces
+        else:
+            expanded.append(ch)
+            col += 1
+    text = ''.join(expanded)
+    
+    # Split into words: each whitespace character becomes one space, runs are NOT collapsed
+    # But we need to identify "words" as sequences of non-whitespace characters
+    # Whitespace characters are: space, tab (already expanded), newline, etc.
+    # After tab expansion, whitespace chars are: ' ', '\n', '\r', '\f', '\v'
+    
+    # We need to parse the text into tokens: words (non-whitespace sequences) and whitespace runs
+    # But the spec says: "each whitespace character becomes one space (runs are NOT collapsed)"
+    # This means when we reconstruct, each whitespace char is a single space.
+    # However, "whitespace at each line break is dropped (trailing whitespace of a line and leading whitespace of the next; leading whitespace of the whole text is kept)"
+    
+    # Let me re-read: "tabs are expanded and each whitespace character becomes one space (runs are NOT collapsed)"
+    # So after tab expansion, every whitespace character (space, newline, etc.) is treated as a single space character.
+    # Runs of whitespace are NOT collapsed, so "a  b" has two spaces between a and b.
+    
+    # "whitespace at each line break is dropped (trailing whitespace of a line and leading whitespace of the next; leading whitespace of the whole text is kept)"
+    # This means: when we break a line, we drop trailing whitespace from the current line and leading whitespace from the next line.
+    # But leading whitespace of the whole text is kept.
+    
+    # "words longer than width ARE broken"
+    
+    # Let me think about this differently. The textwrap module with default options:
+    # - expand_tabs=True: tabs are expanded
+    # - replace_whitespace=True: all whitespace characters are replaced with a single space
+    # - collapse_whitespace=True: runs of whitespace are collapsed to a single space
+    # - break_long_words=True: words longer than width are broken
+    # - break_on_hyphens=True: break on hyphens
+    
+    # But the problem says: "each whitespace character becomes one space (runs are NOT collapsed)"
+    # So collapse_whitespace=False effectively, but replace_whitespace=True.
+    
+    # Wait, let me re-read: "Default options mean: tabs are expanded and each whitespace character becomes one space (runs are NOT collapsed)"
+    # So: expand_tabs=True, replace_whitespace=True, collapse_whitespace=False
+    
+    # "whitespace at each line break is dropped (trailing whitespace of a line and leading whitespace of the next; leading whitespace of the whole text is kept)"
+    # This is the standard behavior of textwrap: when breaking lines, trailing whitespace on a line is removed, and leading whitespace on the next line is removed. But the very first line keeps its leading whitespace.
+    
+    # Let me implement this step by step:
+    
+    # Step 1: Expand tabs (done above)
+    # Step 2: Replace all whitespace characters with single spaces (but don't collapse runs)
+    # Actually, "each whitespace character becomes one space" means each whitespace char is replaced by a space. So "a\nb" becomes "a b", "a  b" stays "a  b" (two spaces).
+    
+    # Let me define whitespace characters: ' ', '\t', '\n', '\r', '\f', '\v'
+    # After tab expansion, tabs are gone. So whitespace chars are: ' ', '\n', '\r', '\f', '\v'
+    
+    # Replace each whitespace char with a space
+    result_chars = []
+    for ch in text:
+        if ch in ' \n\r\f\v':
+            result_chars.append(' ')
+        else:
+            result_chars.append(ch)
+    text = ''.join(result_chars)
+    
+    # Now text has only spaces as whitespace (no newlines, tabs, etc.)
+    # Leading whitespace of the whole text is kept.
+    
+    # Now we need to wrap this text to width.
+    # Words are sequences of non-space characters.
+    # We need to break the text into lines such that no line exceeds width.
+    # Words longer than width are broken.
+    # When breaking a line, trailing spaces are dropped, and leading spaces of the next line are dropped (except for the first line).
+    
+    # Let me parse the text into tokens: leading whitespace, then alternating words and whitespace runs.
+    
+    # Actually, let me think about this more carefully.
+    # The text after replacement looks like: "  hello   world  foo"
+    # Leading whitespace: "  " (two spaces)
+    # Then: "hello", "   " (three spaces), "world", "  " (two spaces), "foo"
+    
+    # When wrapping:
+    # - First line: keep leading whitespace, then add words as long as they fit.
+    # - When a word doesn't fit, break the line. The trailing whitespace before the break is dropped.
+    # - The next line starts with the word (no leading whitespace, since it's dropped).
+    
+    # Let me implement a greedy algorithm:
+    
+    # Parse into tokens: list of (type, value) where type is 'ws' or 'word'
+    tokens = []
+    i = 0
+    n = len(text)
+    while i < n:
+        if text[i] == ' ':
+            j = i
+            while j < n and text[j] == ' ':
+                j += 1
+            tokens.append(('ws', text[i:j]))
+            i = j
+        else:
+            j = i
+            while j < n and text[j] != ' ':
+                j += 1
+            tokens.append(('word', text[i:j]))
+            i = j
+    
+    # Now build lines
+    lines = []
+    current_line = ''
+    first_line = True
+    
+    for token_type, token_value in tokens:
+        if token_type == 'ws':
+            if first_line:
+                # Leading whitespace of the whole text is kept
+                current_line += token_value
+                first_line = False
+            else:
+                # Whitespace between words: we'll add it when we add the next word
+                # Actually, we need to handle this carefully.
+                # Let me reconsider.
+                pass
+        else:
+            # It's a word
+            if first_line:
+                # This shouldn't happen if there's leading whitespace, but if text starts with a word
+                first_line = False
+                # Try to add the word
+                if len(current_line) + len(token_value) <= width:
+                    current_line += token_value
+                else:
+                    # Word is longer than remaining space, or even longer than width
+                    # Break the word
+                    if len(token_value) > width:
+                        # Break the word into chunks of width
+                        while token_value:
+                            chunk = token_value[:width]
+                            token_value = token_value[width:]
+                            if current_line:
+                                lines.append(current_line)
+                                current_line = ''
+                            current_line = chunk
+                        # current_line now has the last chunk
+                    else:
+                        # Word fits in width but not in current line
+                        if current_line:
+                            lines.append(current_line)
+                            current_line = token_value
+                        else:
+                            current_line = token_value
+            else:
+                # Not first line
+                # Check if we can add this word to current line
+                # We need to account for the whitespace before this word
+                # Hmm, this is getting complicated. Let me restructure.
+                pass
+    
+    # This approach is getting messy. Let me try a different approach.
+    
+    # Let me re-think. After replacing whitespace with spaces, the text is a string with spaces.
+    # I'll process character by character, building lines.
+    
+    # Actually, let me use a simpler approach:
+    # 1. Split the text into words and whitespace runs.
+    # 2. Use a greedy algorithm to build lines.
+    
+    # Let me restart with a cleaner implementation.
+    
+    # Re-parse tokens
+    tokens = []
+    i = 0
+    n = len(text)
+    while i < n:
+        if text[i] == ' ':
+            j = i
+            while j < n and text[j] == ' ':
+                j += 1
+            tokens.append(('ws', text[i:j]))
+            i = j
+        else:
+            j = i
+            while j < n and text[j] != ' ':
+                j += 1
+            tokens.append(('word', text[i:j]))
+            i = j
+    
+    lines = []
+    current_line = ''
+    first_line = True
+    pending_ws = ''  # whitespace to be added before the next word
+    
+    for token_type, token_value in tokens:
+        if token_type == 'ws':
+            if first_line:
+                # Leading whitespace of the whole text
+                current_line += token_value
+                first_line = False
+            else:
+                # Whitespace between words: store it as pending
+                pending_ws = token_value
+        else:
+            # It's a word
+            if first_line:
+                first_line = False
+                # No pending whitespace (shouldn't happen if text starts with word)
+                if len(current_line) + len(token_value) <= width:
+                    current_line += token_value
+                else:
+                    # Need to break
+                    if len(token_value) > width:
+                        # Break the word
+                        while token_value:
+                            chunk = token_value[:width]
+                            token_value = token_value[width:]
+                            if current_line:
+                                lines.append(current_line)
+                                current_line = ''
+                            current_line = chunk
+                    else:
+                        if current_line:
+                            lines.append(current_line)
+                            current_line = token_value
+                        else:
+                            current_line = token_value
+            else:
+                # Not first line
+                # Try to add pending_ws + word to current_line
+                candidate = current_line + pending_ws + token_value
+                if len(candidate) <= width:
+                    current_line = candidate
+                    pending_ws = ''
+                else:
+                    # Can't fit, break the line
+                    if current_line:
+                        lines.append(current_line)
+                        current_line = ''
+                    # Now try to add the word to the new line
+                    if len(token_value) > width:
+                        # Break the word
+                        while token_value:
+                            chunk = token_value[:width]
+                            token_value = token_value[width:]
+                            if current_line:
+                                lines.append(current_line)
+                                current_line = ''
+                            current_line = chunk
+                    else:
+                        current_line = token_value
+                    pending_ws = ''
+    
+    if current_line:
+        lines.append(current_line)
+    
+    return lines

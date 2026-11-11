@@ -1,0 +1,11 @@
+
+=== patched-s4 ===
+  glob_match          5/8   missed: class, negation, rbracket
+  shlex_split         5/7   missed: single_q, double_q
+  urljoin             6/9   missed: dotdot, fragment, dot_only
+  textwrap            5/6   missed: random60
+  csv_rows            7/7   clean
+  add_months          6/6   clean
+  parse_qsl           7/7   clean
+
+patched-s4: 41/50 checks pass (82.0%) | 3/7 tasks fully clean

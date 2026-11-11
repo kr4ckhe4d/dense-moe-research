@@ -1,0 +1,11 @@
+
+=== patched-s3 ===
+  glob_match          7/8   missed: rbracket
+  shlex_split         7/7   clean
+  urljoin             0/9   missed: absolute, netloc, abs_path, rel_path, dotdot, empty, query, fragment, dot_only
+  textwrap            0/6   DID NOT RUN — IndentationError: expected an indented block after 'else' statement on line 78
+  csv_rows            7/7   clean
+  add_months          6/6   clean
+  parse_qsl           7/7   clean
+
+patched-s3: 34/50 checks pass (68.0%) | 4/7 tasks fully clean

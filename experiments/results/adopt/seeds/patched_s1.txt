@@ -1,0 +1,11 @@
+
+=== patched-s1 ===
+  glob_match          0/8   missed: star, question, class, negation, rbracket, unterm, anchored, random300
+  shlex_split         7/7   clean
+  urljoin             7/9   missed: query, dot_only
+  textwrap            3/6   missed: longword, empty, random60
+  csv_rows            7/7   clean
+  add_months          6/6   clean
+  parse_qsl           6/7   missed: empty
+
+patched-s1: 36/50 checks pass (72.0%) | 3/7 tasks fully clean

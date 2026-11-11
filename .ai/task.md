@@ -83,6 +83,13 @@ docs/phase3_findings.md (F5 in findings.md).
 - Tile kernel is compute-bound at 4+ tokens; 2x parallel blocks = -4% per MTP step at 120K (not
   shipped); WMMA kernel too slow below ~6 tokens. Worktree is back at the two committed patches.
 
+## Done (adoption check for the patched build), 2026-11-11
+- benchmarks/adopt_check.sh, adopt_check_seeds.sh, depth_profile.py --all-gpus,
+  scripts/adopt_summary.py; docs/depth.md section 8 (F12).
+- Two-card daily layout: MTP q8_0 KV 28.5 -> 32.7 tok/s at 120K; code quality unchanged over
+  12 seeds (37.3 vs 38.0 of 50, sd 3-5).
+- Not done: the user's daily presets still point at the stock build.
+
 ## Waiting on the user
 Original project closed (docs/conclusions.md). Next milestone to be chosen from docs/roadmap.md
 (suggested: extend the q8_0 attention patch, or lenient draft acceptance). Possible: the user opens the upstream PR themselves.

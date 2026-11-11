@@ -165,7 +165,12 @@ patch):
 - Greedy output: all 8 MTP generations are identical to the build without the attention patch
   (verify batches used the tile kernel before too; only the conversion moved). Plain decoding:
   4 of 8 identical, 4 diverge after 200-570 characters. q8_0 against f16 KV diverges at the same
-  rate (4 of 8). The old 1-token path also quantized the query to 8 bits; the new one does not.
+  rate (4 of 8).
+- Numerical error of one attention call against the CPU reference (`test-backend-ops`, NMSE,
+  head size 256, 1-2 tokens; `experiments/results/fattn/nmse_*.txt`): q8_0 stock 2.3e-6, q8_0
+  patched 5.5e-6, f16 K/V (either build) 1.3e-5, q4_0 6.4e-6. The pass threshold is 5e-4. The
+  patched q8_0 path is less exact than the vector kernel it replaces (which works in integers)
+  and more exact than the f16 path every build uses by default.
 
 ### 7. Why a verify batch costs more than one token at depth, and what was tried
 
@@ -195,20 +200,64 @@ patch; `experiments/results/fattn/blocks_sweep.txt`):
   efficient at 2-8 tokens. With twice the blocks the existing one is still 2.6x the bandwidth
   ideal.
 
+### 8. Check before daily use: both cards, and code quality
+
+The daily presets split the 27B over both cards and use q8_0 KV with MTP. Two checks on that
+layout, stock against the patched build (MMVQ + attention patches). Tables:
+`experiments/results/adopt/summary.md` (`scripts/adopt_summary.py`).
+
+**Speed on both cards** (`depth_profile.py --all-gpus`, same prompts as above):
+
+| config | 2K | 32K | 64K | 120K | peak VRAM, both cards |
+|---|---:|---:|---:|---:|---:|
+| plain, q8_0 KV, stock | 23.5 | 19.9 | 17.1 | 13.8 | 27.2 GiB |
+| plain, q8_0 KV, patched | 23.7 | 21.7 | 20.1 | 17.1 | 27.2 GiB |
+| MTP, q8_0 KV, stock | 55.0 | 43.3 | 36.9 | 28.5 | 29.4 GiB |
+| MTP, q8_0 KV, patched | 57.7 | 45.6 | 41.5 | 32.7 | 29.4 GiB |
+| MTP, f16 KV, stock | 55.1 | 48.9 | 38.5 | 34.9 | 32.2 GiB |
+| MTP, f16 KV, patched | 57.7 | 48.8 | 43.3 | 35.6 | 32.2 GiB |
+
+- The two-card numbers match the one-card ones (MTP, q8_0, 120K: 28.5 here, 29.1 on the R9700
+  alone), and so do the gains: plain +24% at 120K, MTP +15% at 120K and +5% at 2K.
+- Per verify step, which removes the run-to-run change in accepted tokens: 109.1 -> 96.2 ms at
+  120K (-12%), 60.6 -> 58.1 at 2K (-4%).
+- f16 KV on stock is +22% over q8_0 at 120K for 2.8 GiB more. With the patch that gap is 9%.
+
+**Code quality** (`benchmarks/adopt_check.sh`, `adopt_check_seeds.sh`): the 7-task, 50-check suite
+of local-llm-benchmarks on the preset `qwen3.8-27B-q6-128k-nothink`.
+
+| run | build | scores | mean | sd |
+|---|---|---|---:|---:|
+| temperature 0, 3 repeats | stock | 44 44 44 | 44.0 | 0 |
+| temperature 0, 3 repeats | patched | 41 41 41 | 41.0 | 0 |
+| temperature 1.0 (preset sampler), seeds 1-12 | stock | 41 43 42 35 39 40 31 39 36 32 29 41 | 37.3 | 4.7 |
+| temperature 1.0 (preset sampler), seeds 1-12 | patched | 36 42 34 41 35 35 41 39 35 40 35 43 | 38.0 | 3.3 |
+
+- At temperature 0 each build gives one fixed answer per task, so 44 against 41 is one sample
+  each. 3 of the 7 answers are byte-identical; the 3 points come from one `textwrap` answer that
+  timed out (0/6 against 4/6) and one more `parse_qsl` check passed.
+- Over 12 seeds at the preset's sampler the means are 37.3 and 38.0 with a spread of 3-5 points
+  between seeds. No per-task mean differs by more than 0.5 checks, and answers that failed to
+  run occur 3 times in 12 on both builds. No quality difference is measurable.
+- The suite's spread between seeds is large: a difference under about 4 points between two
+  single runs of it means nothing.
+
 ## What this means
 
 1. **Without rebuilding llama.cpp: use an f16 KV cache for the 27B at long context** where the
-   VRAM allows (+3.3 GiB at 128K): drop `-ctk q8_0 -ctv q8_0`. The daily presets use q8_0 and
-   split the model over both cards; that layout was not measured here.
+   VRAM allows (+3.3 GiB at 128K): drop `-ctk q8_0 -ctv q8_0`. On the two-card daily layout this
+   is +22% at 120K (section 8).
 2. **With the attention patch, q8_0 KV is within 5-9% of f16** and keeps its VRAM saving: +24%
    plain and +14-17% with MTP at 120K, nothing lost in short contexts.
 3. **The MMVQ patch is still worth carrying**, and worth 3-4 ms per verify step at any depth.
-4. **The extra cost of verify batches at depth is not a cheap fix** (section 7): about 4% is
+4. **The patched build is safe to use for the daily presets** (section 8): the same gains on
+   both cards (+15% with MTP at 120K, +5% at 2K) and no measurable change in code quality.
+5. **The extra cost of verify batches at depth is not a cheap fix** (section 7): about 4% is
    available from block-count tuning; more needs a new small-batch matrix-core kernel.
 
 ## Limits
 
-- One model, one card, one build. The prompt is C++ source with two tasks; 256 tokens per row.
+- One model, one build; one card except in section 8. The prompt is C++ source with two tasks; 256 tokens per row.
 - Only MTP at draft length 3. DFlash at depth on this build was not measured (the drafter GGUF is
   no longer on disk).
 - The "ideal" rows assume the whole cache is read once per evaluation at 640 GB/s.

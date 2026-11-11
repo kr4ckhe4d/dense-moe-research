@@ -1,0 +1,15 @@
+# build: patched (version: 0.9.0-dev (build 12165, commit 4b77dee05)), 2026-11-11T10:05:01+08:00
+
+=== patched-r3-t0 ===
+  glob_match          8/8   clean
+  shlex_split         5/7   missed: single_q, double_q
+  urljoin             8/9   missed: dot_only
+  textwrap            0/6   DID NOT RUN — timeout
+  csv_rows            7/7   clean
+  add_months          6/6   clean
+  parse_qsl           7/7   clean
+
+patched-r3-t0: 41/50 checks pass (82.0%) | 4/7 tasks fully clean
+2.49.326.231 I slot print_timing: id  0 | task 2172 | draft acceptance = 0.94231 (  294 accepted /   312 generated), mean len =  3.83
+2.53.322.685 I slot print_timing: id  1 | task 2279 | draft acceptance = 0.75000 (  144 accepted /   192 generated), mean len =  3.25
+2.59.294.615 I slot print_timing: id  2 | task 2346 | draft acceptance = 0.87415 (  257 accepted /   294 generated), mean len =  3.62

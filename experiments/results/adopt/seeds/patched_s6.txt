@@ -1,0 +1,11 @@
+
+=== patched-s6 ===
+  glob_match          5/8   missed: star, rbracket, random300
+  shlex_split         5/7   missed: single_q, double_q
+  urljoin             4/9   missed: abs_path, rel_path, dotdot, fragment, dot_only
+  textwrap            1/6   missed: collapse, longword, exact, empty, random60
+  csv_rows            7/7   clean
+  add_months          6/6   clean
+  parse_qsl           7/7   clean
+
+patched-s6: 35/50 checks pass (70.0%) | 3/7 tasks fully clean

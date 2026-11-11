@@ -1,0 +1,11 @@
+
+=== patched-s7 ===
+  glob_match          7/8   missed: rbracket
+  shlex_split         5/7   missed: single_q, double_q
+  urljoin             9/9   clean
+  textwrap            2/6   missed: simple, collapse, longword, random60
+  csv_rows            7/7   clean
+  add_months          6/6   clean
+  parse_qsl           5/7   missed: plus, pct
+
+patched-s7: 41/50 checks pass (82.0%) | 3/7 tasks fully clean

@@ -1,0 +1,11 @@
+
+=== patched-s2 ===
+  glob_match          7/8   missed: random300
+  shlex_split         7/7   clean
+  urljoin             6/9   missed: abs_path, rel_path, dot_only
+  textwrap            2/6   missed: simple, collapse, empty, random60
+  csv_rows            7/7   clean
+  add_months          6/6   clean
+  parse_qsl           7/7   clean
+
+patched-s2: 42/50 checks pass (84.0%) | 4/7 tasks fully clean

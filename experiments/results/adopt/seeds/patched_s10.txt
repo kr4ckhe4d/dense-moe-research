@@ -1,0 +1,11 @@
+
+=== patched-s10 ===
+  glob_match          7/8   missed: rbracket
+  shlex_split         7/7   clean
+  urljoin             3/9   missed: netloc, abs_path, rel_path, dotdot, fragment, dot_only
+  textwrap            4/6   missed: empty, random60
+  csv_rows            7/7   clean
+  add_months          6/6   clean
+  parse_qsl           6/7   missed: empty
+
+patched-s10: 40/50 checks pass (80.0%) | 3/7 tasks fully clean

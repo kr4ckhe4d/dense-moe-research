@@ -1,0 +1,174 @@
+def glob_match(pattern, name):
+    """
+    Implement fnmatch.fnmatchcase semantics from scratch.
+    
+    Supports:
+    - * : matches any run of characters (including empty)
+    - ? : matches exactly one character
+    - [seq] : matches any character in seq
+    - [!seq] : matches any character NOT in seq
+    - ] immediately after [ or [! is a literal ]
+    - Unterminated [ is a literal [
+    
+    Matching is anchored to the whole string.
+    """
+    def match_here(pattern, name):
+        """
+        Match pattern against name, both starting at their current positions.
+        Returns True if the entire remaining pattern matches the entire remaining name.
+        """
+        while pattern:
+            c = pattern[0]
+            if c == '*':
+                # Skip consecutive stars
+                while pattern and pattern[0] == '*':
+                    pattern = pattern[1:]
+                if not pattern:
+                    return True
+                # Try matching the rest of the pattern against every possible
+                # suffix of name (including empty)
+                for i in range(len(name) + 1):
+                    if match_here(pattern, name[i:]):
+                        return True
+                return False
+            elif c == '?':
+                if not name:
+                    return False
+                pattern = pattern[1:]
+                name = name[1:]
+            elif c == '[':
+                # Parse the bracket expression
+                # Check for unterminated [
+                # Find the closing ]
+                # A ] immediately after [ or [! is a literal
+                i = 1
+                negated = False
+                if i < len(pattern) and pattern[i] == '!':
+                    negated = True
+                    i += 1
+                # If ] is immediately after [ or [!, it's a literal
+                if i < len(pattern) and pattern[i] == ']':
+                    # This ] is a literal, so we need to find the real closing ]
+                    i += 1
+                    # Now look for the closing ]
+                    while i < len(pattern) and pattern[i] != ']':
+                        i += 1
+                    if i >= len(pattern):
+                        # Unterminated [
+                        # Treat [ as literal
+                        if not name or name[0] != '[':
+                            return False
+                        pattern = pattern[1:]
+                        name = name[1:]
+                        continue
+                else:
+                    # Look for the closing ]
+                    while i < len(pattern) and pattern[i] != ']':
+                        i += 1
+                    if i >= len(pattern):
+                        # Unterminated [
+                        if not name or name[0] != '[':
+                            return False
+                        pattern = pattern[1:]
+                        name = name[1:]
+                        continue
+                
+                # Now pattern[i] is ']'
+                # The bracket expression is pattern[1:i]
+                bracket_content = pattern[1:i]
+                # Check if the first char of bracket_content is ']' (literal case)
+                # Actually, we already handled that above. Let me re-examine.
+                
+                # Wait, I need to re-examine the logic. Let me redo this more carefully.
+                # The bracket expression starts at pattern[0] = '['
+                # We need to find the matching ']'
+                # Rules:
+                # - If the first char after [ is !, it's negation
+                # - If the first char after [ (or [!) is ], it's a literal ]
+                # - Otherwise, we look for the next ]
+                
+                # Let me restart the bracket parsing
+                # pattern[0] is '['
+                j = 1
+                negated = False
+                if j < len(pattern) and pattern[j] == '!':
+                    negated = True
+                    j += 1
+                # Check if pattern[j] is ']'
+                if j < len(pattern) and pattern[j] == ']':
+                    # This ] is a literal, so the bracket expression includes it
+                    # and we need to find the next ]
+                    j += 1
+                    while j < len(pattern) and pattern[j] != ']':
+                        j += 1
+                    if j >= len(pattern):
+                        # Unterminated
+                        if not name or name[0] != '[':
+                            return False
+                        pattern = pattern[1:]
+                        name = name[1:]
+                        continue
+                else:
+                    while j < len(pattern) and pattern[j] != ']':
+                        j += 1
+                    if j >= len(pattern):
+                        # Unterminated
+                        if not name or name[0] != '[':
+                            return False
+                        pattern = pattern[1:]
+                        name = name[1:]
+                        continue
+                
+                # Now pattern[j] is ']'
+                # The content of the bracket is pattern[1:j]
+                # But we need to handle the negation flag
+                # The actual characters to match against are in pattern[1:j]
+                # If negated, we match if the char is NOT in the set
+                
+                if not name:
+                    return False
+                
+                ch = name[0]
+                
+                # Parse the bracket content to determine if ch is in the set
+                # The content is pattern[1:j]
+                # We need to handle ranges like a-z
+                content = pattern[1:j]
+                
+                # Determine if ch is in the bracket expression
+                in_set = False
+                k = 0
+                while k < len(content):
+                    if k + 2 < len(content) and content[k+1] == '-':
+                        # Range
+                        start = content[k]
+                        end = content[k+2]
+                        if start <= ch <= end:
+                            in_set = True
+                            break
+                        k += 3
+                    else:
+                        if content[k] == ch:
+                            in_set = True
+                            break
+                        k += 1
+                
+                if negated:
+                    if in_set:
+                        return False
+                else:
+                    if not in_set:
+                        return False
+                
+                pattern = pattern[j+1:]
+                name = name[1:]
+            else:
+                # Literal character
+                if not name or name[0] != c:
+                    return False
+                pattern = pattern[1:]
+                name = name[1:]
+        
+        return not name
+    
+    return match_here(pattern, name)

@@ -71,6 +71,8 @@ def generate(port: int, prompt: str, max_tokens: int) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--gpu", type=int, default=1)
+    ap.add_argument("--all-gpus", action="store_true",
+                    help="let llama-server split the model over every GPU (VRAM is then summed)")
     ap.add_argument("--model", default=str(mt.MODELS / "Qwen3.8-27B-UD-Q6_K.gguf"))
     ap.add_argument("--configs", required=True, help="JSON list; each needs name and spec")
     ap.add_argument("--depths", type=int, nargs="+", default=[2000, 32000, 64000, 120000])
@@ -84,15 +86,17 @@ def main() -> None:
     done = {json.loads(line)["config"]["name"] for line in out.read_text().splitlines()} if out.exists() else set()
     logs = mt.HERE / "experiments/logs/depth"
     logs.mkdir(parents=True, exist_ok=True)
-    env = dict(os.environ, HIP_VISIBLE_DEVICES=str(args.gpu))
+    env = dict(os.environ) if args.all_gpus else dict(os.environ, HIP_VISIBLE_DEVICES=str(args.gpu))
+    gpus = (0, 1) if args.all_gpus else (args.gpu,)
+    vram = lambda: sum(mt.vram_used_mib(g) for g in gpus)
     text = corpus()
     for c in json.loads(args.configs):
         if c["name"] in done:
             continue
         full = {"model_path": args.model, "ctx": c.get("ctx", args.ctx), "n_min": 0, "p_min": 0.0, **c}
         full["extra"] = ["--ctx-checkpoints", "4"] + c.get("extra", [])
-        vram_before = mt.vram_used_mib(args.gpu)
-        log_path = logs / f"server_gpu{args.gpu}_{c['name']}.log"
+        vram_before = vram()
+        log_path = logs / f"server_gpu{'all' if args.all_gpus else args.gpu}_{c['name']}.log"
         rows, peak = [], vram_before
         with open(log_path, "w") as log:
             proc = subprocess.Popen(mt.server_args(full, args.port), env=env, stdout=log,
@@ -107,8 +111,8 @@ def main() -> None:
                     code = cut(text, int(d * cpt))
                     for task, q in TASKS.items():
                         r = generate(args.port, f"```cpp\n{code}```\n\n{q}", args.max_tokens)
-                        peak = max(peak, mt.vram_used_mib(args.gpu))
-                        rows.append({"config": c, "task": task, "target_depth": d, "gpu": args.gpu,
+                        peak = max(peak, vram())
+                        rows.append({"config": c, "task": task, "target_depth": d, "gpu": "all" if args.all_gpus else args.gpu,
                                      "model": Path(args.model).name, **r})
                         print(f"{c['name']:24s} {task:8s} depth {r['depth']:6d} pp {r['pp']:7.1f} "
                               f"({r['prompt_n']:6d}) tg {r['tg']:5.1f} step {r['step_ms']:6.1f} ms "
@@ -121,13 +125,13 @@ def main() -> None:
                 except subprocess.TimeoutExpired:
                     proc.kill()
         time.sleep(2)
-        vram_after = mt.vram_used_mib(args.gpu)
+        vram_after = vram()
         buffers = mt.buffers_from_log(log_path)
         with open(out, "a") as f:
             for row in rows:
                 row.update(vram_before_mib=vram_before, vram_after_mib=vram_after,
                            vram_peak_mib=peak, buffers_mib=buffers,
-                           gpu_shared=max(vram_before, vram_after) > 1024)
+                           gpu_shared=max(vram_before, vram_after) > 1024 * len(gpus))
                 f.write(json.dumps(row) + "\n")
 
 
