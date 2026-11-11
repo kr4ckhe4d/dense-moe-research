@@ -33,6 +33,9 @@ Follow-up tests are listed in [docs/roadmap.md](docs/roadmap.md).
 - **RDNA4 attention fix for q8_0 KV:** a change to llama.cpp's tile attention kernel
   makes decode at 120K +24% faster (plain) and +14-17% (MTP) with a q8_0 KV cache, within 5-9% of
   f16 at 3.3 GiB less VRAM; q4_0 KV and head sizes 64 / 128 are covered too (+94% plain at 120K with q4_0) ([patch](patches/llama.cpp-rdna4-fattn-q8-tile.patch)).
+- **Lenient draft acceptance (lossy, opt-in):** keeping drafted tokens the target rates at 30%
+  or more of its top choice gives +10% at temperature 0 and +17% at temperature 1.0; the
+  code-quality suite shows no loss within noise ([docs/lenient.md](docs/lenient.md)).
 
 ## Key results
 

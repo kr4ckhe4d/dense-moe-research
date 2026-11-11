@@ -97,9 +97,17 @@ docs/phase3_findings.md (F5 in findings.md).
 - Worktrees ~/llama.cpp-b12164-mmvq (both patches, built) and ~/llama.cpp-b12164-errcheck
   (stock kernels + the patch's test cases) still exist.
 
+## Done (lenient draft acceptance), 2026-11-11
+- patches/llama.cpp-spec-lenient.patch (SPEC_ACCEPT_LOG, SPEC_LENIENT_RATIO in
+  common/sampling.cpp; applied in ~/llama.cpp-b12164-mmvq, off unless the variables are set).
+- benchmarks/lenient_probe.py, scripts/lenient_summary.py, docs/lenient.md (F14).
+- r=0.3: +10% (temp 0), +17% (temp 1.0); code quality 39.1 vs 38.0 over 12 seeds.
+- Gotcha: do not export TEMP to llama-server (it is the temp-directory variable; the server
+  exits during load). adopt_check_seeds.sh uses QTEMP.
+
 ## Waiting on the user
 Original project closed (docs/conclusions.md). Next milestone to be chosen from docs/roadmap.md
-(suggested: lenient draft acceptance). Possible: the user opens the upstream PR themselves.
+(suggested: per-context neuron subsets, or the upstream PRs). Possible: the user opens the upstream PR themselves.
 
 ## Next candidate experiments (cheapest first)
 1. Measure the real bar: Qwen3.5-9B GGUF at Q8_0 / Q6_K / Q4_K_M / IQ4_XS in llama.cpp (KLD vs BF16

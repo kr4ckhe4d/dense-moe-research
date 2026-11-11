@@ -1,0 +1,11 @@
+
+=== lenient0.3-s9 ===
+  glob_match          8/8   clean
+  shlex_split         5/7   missed: single_q, double_q
+  urljoin             8/9   missed: dot_only
+  textwrap            0/6   DID NOT RUN — IndentationError: expected an indented block after 'if' statement on line 171
+  csv_rows            7/7   clean
+  add_months          6/6   clean
+  parse_qsl           7/7   clean
+
+lenient0.3-s9: 41/50 checks pass (82.0%) | 4/7 tasks fully clean

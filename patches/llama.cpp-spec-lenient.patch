@@ -1,0 +1,81 @@
+diff --git a/common/sampling.cpp b/common/sampling.cpp
+index 564fa9c4d..80eeb505d 100644
+--- a/common/sampling.cpp
++++ b/common/sampling.cpp
+@@ -695,9 +695,52 @@ std::vector<llama_token> common_sampler_sample_and_accept_n(struct common_sample
+ 
+     const llama_vocab * vocab = llama_model_get_vocab(llama_get_model(ctx));
+ 
++    // Experiment (dense-moe): SPEC_ACCEPT_LOG=<file> appends one JSON line per verify step with the
++    // target's probability of every draft token (each conditioned on the draft before it).
++    // SPEC_LENIENT_RATIO=<r> accepts a draft token the target did not pick if
++    // p_target(draft) >= r * p_target(top). Both use the raw softmax, before the sampler chain.
++    static const char * log_path = getenv("SPEC_ACCEPT_LOG");
++    static const float lenient   = getenv("SPEC_LENIENT_RATIO") ? strtof(getenv("SPEC_LENIENT_RATIO"), nullptr) : 0.0f;
++    const bool probe = log_path != nullptr || lenient > 0.0f;
++    const int n_vocab = llama_vocab_n_tokens(vocab);
++    std::vector<float> p_draft(draft.size(), -1.0f), p_top(draft.size(), -1.0f);
++    std::vector<llama_token> id_top(draft.size(), -1);
++    auto probe_at = [&](size_t k) {
++        const float * logits = llama_get_logits_ith(ctx, idxs[k]);
++        int   best = 0;
++        for (int v = 1; v < n_vocab; v++) {
++            if (logits[v] > logits[best]) {
++                best = v;
++            }
++        }
++        double sum = 0.0;
++        for (int v = 0; v < n_vocab; v++) {
++            sum += exp((double) logits[v] - logits[best]);
++        }
++        id_top[k]  = best;
++        p_top[k]   = (float) (1.0 / sum);
++        p_draft[k] = (float) (exp((double) logits[draft[k]] - logits[best]) / sum);
++    };
++    if (log_path != nullptr) {
++        for (size_t k = 0; k < draft.size(); k++) {
++            probe_at(k);
++        }
++    }
++
+     size_t i = 0;
++    size_t n_lenient = 0;
+     for (; i < draft.size(); i++) {
+-        const llama_token id = common_sampler_sample(gsmpl, ctx, idxs[i], grammar_first);
++        llama_token id = common_sampler_sample(gsmpl, ctx, idxs[i], grammar_first);
++
++        if (probe && draft[i] != id && lenient > 0.0f) {
++            if (p_top[i] < 0.0f) {
++                probe_at(i);
++            }
++            if (p_draft[i] >= lenient * p_top[i] && !llama_vocab_is_eog(vocab, draft[i]) && !llama_vocab_is_eog(vocab, id)) {
++                id = draft[i];
++                n_lenient++;
++            }
++        }
+ 
+         common_sampler_accept(gsmpl, id, true);
+ 
+@@ -710,6 +753,22 @@ std::vector<llama_token> common_sampler_sample_and_accept_n(struct common_sample
+         }
+     }
+ 
++    if (log_path != nullptr) {
++        static FILE * f = fopen(log_path, "a");
++        if (f != nullptr) {
++            fprintf(f, "{\"n_acc\": %zu, \"n_lenient\": %zu, \"draft\": [", i, n_lenient);
++            for (size_t k = 0; k < draft.size(); k++) { fprintf(f, "%s%d", k ? ", " : "", draft[k]); }
++            fprintf(f, "], \"top\": [");
++            for (size_t k = 0; k < draft.size(); k++) { fprintf(f, "%s%d", k ? ", " : "", id_top[k]); }
++            fprintf(f, "], \"p_draft\": [");
++            for (size_t k = 0; k < draft.size(); k++) { fprintf(f, "%s%.6g", k ? ", " : "", p_draft[k]); }
++            fprintf(f, "], \"p_top\": [");
++            for (size_t k = 0; k < draft.size(); k++) { fprintf(f, "%s%.6g", k ? ", " : "", p_top[k]); }
++            fprintf(f, "]}\n");
++            fflush(f);
++        }
++    }
++
+     if (i == draft.size()) {
+         const llama_token id = common_sampler_sample(gsmpl, ctx, idxs[i], grammar_first);
+ 

@@ -27,15 +27,19 @@ Done (`docs/depth.md`, F10):
   27B with q4_0 KV at 120K: plain +94%, MTP +11%. Open follow-up: f16 decode at head sizes
   64 / 128 is slower than the patched quantized path, so the tile kernel may help there too.
 
+- **Lenient draft acceptance** (`docs/lenient.md`, F14). r=0.3: +10% at temperature 0, +17% at
+  temperature 1.0, 1-6% of tokens not the target's top choice; code-quality suite unchanged
+  within noise. Kept as an opt-in experiment. Open: a quality measure for prose, and combining
+  it with probabilistic draft sampling.
+
 Candidates, in the order I would run them:
 
 | # | Test | Why it could matter | Cheap first step |
 |---|---|---|---|
 | 1 | **Small-batch matrix-core attention kernel** | A 4-token verify batch costs 2.0x one token at depth because the tile kernel is compute-bound. Block-count tuning gives only ~4% per MTP step at 120K (tried, `docs/depth.md` section 7); the WMMA kernel is 2.6x the bandwidth ideal at small batches even with more blocks. A proper fix is a new kernel: up to ~+20% for MTP at 120K, uncertain | Profile where the WMMA kernel's flat per-call cost goes |
-| 2 | **Lenient draft acceptance** | Verification accepts only exact matches. Accepting near-ties spends a small quality budget on acceptance instead of on bits; aimed at prose and instructions (~49% acceptance) | Log the target's probability of each rejected draft token; no patch needed to size the gain |
-| 3 | **Per-context neuron subsets** | One neuron subset per kind of text (code, prose, JSON), chosen per neuron from recorded usage. Unlike per-token masks it is stable across the verify batch, so it could stack with MTP / DFlash. Ceiling ~1.2x on top of quantization. Untested: only whole-expert static pruning was measured (KLD 0.395 at 75%) | Offline: per-domain subsets at 50% / 75% kept, same KLD protocol, plus routing of held-out prompts. Needs activations regenerated (~half a day in all). Pass bar: near IQ4_XS's 0.018 at 50% |
-| 4 | **Shared-dequant verify kernel** | The multi-column MMVQ loop dequantizes each weight block once per drafted token. Smaller than first estimated: with the patch a 6-token batch costs 1.18x one token on UD-Q6_K (Q3_K_M 1.47x, Q8_0 1.06x), so ~10% of a verify step on Q6_K. Upstream merged the same idea for OpenCL (#31758) | Prototype for Q6_K only, time with `llama-bench -p 1..8` |
-| 5 | **Drafter fine-tuned on the user's workload** | DFlash drafters are 1.3-2B parameters and trainable on the R9700; output stays lossless. Targets the same weak domains as 2 | Measure acceptance on real agent transcripts first |
+| 2 | **Per-context neuron subsets** | One neuron subset per kind of text (code, prose, JSON), chosen per neuron from recorded usage. Unlike per-token masks it is stable across the verify batch, so it could stack with MTP / DFlash. Ceiling ~1.2x on top of quantization. Untested: only whole-expert static pruning was measured (KLD 0.395 at 75%) | Offline: per-domain subsets at 50% / 75% kept, same KLD protocol, plus routing of held-out prompts. Needs activations regenerated (~half a day in all). Pass bar: near IQ4_XS's 0.018 at 50% |
+| 3 | **Shared-dequant verify kernel** | The multi-column MMVQ loop dequantizes each weight block once per drafted token. Smaller than first estimated: with the patch a 6-token batch costs 1.18x one token on UD-Q6_K (Q3_K_M 1.47x, Q8_0 1.06x), so ~10% of a verify step on Q6_K. Upstream merged the same idea for OpenCL (#31758) | Prototype for Q6_K only, time with `llama-bench -p 1..8` |
+| 4 | **Drafter fine-tuned on the user's workload** | DFlash drafters are 1.3-2B parameters and trainable on the R9700; output stays lossless. Targets the weak domains (prose, instructions) without changing the output | Measure acceptance on real agent transcripts first |
 
 ## Final status (2026-10-24, F9): project closed
 

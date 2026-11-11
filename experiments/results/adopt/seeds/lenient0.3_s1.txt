@@ -1,0 +1,11 @@
+
+=== lenient0.3-s1 ===
+  glob_match          8/8   clean
+  shlex_split         6/7   missed: mixed
+  urljoin             2/9   missed: netloc, abs_path, rel_path, dotdot, query, fragment, dot_only
+  textwrap            0/6   DID NOT RUN — SyntaxError: invalid syntax
+  csv_rows            0/7   missed: plain, quoted, dquote, embed_nl, crlf, empty_f, no_trail
+  add_months          6/6   clean
+  parse_qsl           7/7   clean
+
+lenient0.3-s1: 29/50 checks pass (58.0%) | 3/7 tasks fully clean

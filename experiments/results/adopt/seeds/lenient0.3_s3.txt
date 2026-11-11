@@ -1,0 +1,11 @@
+
+=== lenient0.3-s3 ===
+  glob_match          6/8   missed: rbracket, random300
+  shlex_split         5/7   missed: single_q, double_q
+  urljoin             8/9   missed: dot_only
+  textwrap            3/6   missed: collapse, empty, random60
+  csv_rows            7/7   clean
+  add_months          6/6   clean
+  parse_qsl           7/7   clean
+
+lenient0.3-s3: 42/50 checks pass (84.0%) | 3/7 tasks fully clean

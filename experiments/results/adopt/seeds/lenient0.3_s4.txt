@@ -1,0 +1,11 @@
+
+=== lenient0.3-s4 ===
+  glob_match          7/8   missed: rbracket
+  shlex_split         7/7   clean
+  urljoin             4/9   missed: rel_path, dotdot, empty, fragment, dot_only
+  textwrap            4/6   missed: collapse, random60
+  csv_rows            0/7   missed: plain, quoted, dquote, embed_nl, crlf, empty_f, no_trail
+  add_months          6/6   clean
+  parse_qsl           7/7   clean
+
+lenient0.3-s4: 35/50 checks pass (70.0%) | 3/7 tasks fully clean

@@ -418,3 +418,18 @@ Full report: `docs/depth.md` section 9. Same patch file as F11.
   runs as fast as q8_0 KV.
 - Not covered: end-to-end runs at head sizes 64 / 128 (no such model on disk), the quality cost
   of q4_0 KV, f16 decode at head sizes 64 / 128 (slower than the patched quantized path).
+
+## F14. Lenient draft acceptance: +10-17% for 1-6% non-top tokens (2026-11-11)
+
+Full report: `docs/lenient.md`. Patch: `patches/llama.cpp-spec-lenient.patch` (opt-in by
+environment variable).
+- Rule: keep a draft token the target did not pick if its target probability is at least r times
+  the top token's. 27B UD-Q6_K, MTP draft 3, six domains.
+- r=0.3, temperature 0: 54.0 -> 59.6 tok/s (+10%); prose +15%, instructions +18%, math and JSON
+  +2-3%. r=0.1 is no faster. Temperature 1.0 (one seed): 49.4 -> 57.9 (+17%); lossless
+  probabilistic draft sampling gives 53.2.
+- Half of all rejected drafts have under a tenth of the top token's probability, which caps what
+  any near-tie rule can recover.
+- Code-quality suite on the daily preset, 12 seeds: 39.1 +- 4.3 against 38.0 +- 3.3 exact;
+  temperature 0: 40 against 41. No loss measurable; the suite resolves about 3 points.
+- Not lossless and only tested on code quality, so it is not suggested for daily use.
