@@ -499,3 +499,29 @@ Full tables: `docs/fork_grid.md`. Two-card preset shape (128K, q8_0 KV, MTP), 27
 - The fork's prefill to 120K is 12-23% slower than stock.
 - Code quality on the fork, UD-Q4_K_XL v3.1, 12 seeds: 37.1 ± 4.0 of 50 against 38.4 ± 3.3 on
   stock.
+
+## F19. `-sm tensor`: both cards on every layer, +43-78% on stock, 3x with the fork (2026-11-12)
+
+Full tables: `docs/tensor_split.md`, fork settings in `docs/fork_grid.md`. Two cards, 128K,
+q8_0 KV, MTP draft 3, decode tok/s explain / code.
+
+| Build, split, file | 2K | 32K | 120K |
+|---|---:|---:|---:|
+| stock, layer, UD-Q6_K (today's preset) | 51.1 / 59.5 | | 28.1 / 32.0 |
+| stock, tensor, UD-Q6_K | 73.8 / 87.1 | 63.9 / 71.7 | 44.9 / 53.5 |
+| stock, tensor, UD-Q4_K_XL v3.1 | 83.4 / 95.8 | 71.7 / 78.5 | 51.3 / 57.7 |
+| this repo's patches, tensor, UD-Q4_K_XL v3.1 | 82.5 / 97.6 | 80.5 / 89.9 | 75.7 / 77.3 |
+| fork r265, tensor, UD-Q6_K | 87.4 / 108.5 | 84.1 / 97.5 | 73.1 / 90.4 |
+| fork r265, tensor, UD-Q4_K_XL v3.1 | 93.0 / 123.7 | 100.1 / 111.0 | 90.9 / 99.0 |
+
+- The mode is in stock llama.cpp (experimental). The integrated GPU has to be hidden
+  (`HIP_VISIBLE_DEVICES=0,1`).
+- Step at 2K on stock 53.5 -> 37.5 ms; the loss with depth remains on stock and is removed by
+  either attention patch.
+- Fork prefill with tensor is 22-24% faster than stock with layer.
+- Code quality over 12 seeds: 39.2 ± 5.3 (stock tensor, UD-Q6_K), 35.8 ± 4.8 (stock tensor,
+  UD-Q4_K_XL), 37.8 ± 4.7 (fork tensor, UD-Q4_K_XL), against 37.3 ± 4.7 for the preset.
+- The drafter shortlist patch of F16 does not work under this split (2 of 2,012 drafts
+  accepted).
+- Fork settings under the layer split: `--spec-draft-mtp-vocab 98304` +5-13% at draft 3; draft
+  3 is best at 120K; a larger `-ub` does not help prefill.

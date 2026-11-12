@@ -49,9 +49,18 @@ Done (`docs/depth.md`, F10):
   +15-24% over stock at 2K and +62-97% at 120K. Its adaptive drafter is the fastest at 2K and
   slower than a fixed draft 3 at 120K. Its prefill is 12-23% slower than stock.
 
-**Next (2026-11-12):** decide whether the daily presets move to the fork (and to the v3.1
-UD-Q4_K_XL file). Open on the fork: its prefill loss, its own draft-vocabulary option against
-the shortlist numbers here, and a depth-aware choice between its adaptive and fixed drafters.
+- **`-sm tensor`** (`docs/tensor_split.md`, F19). Both cards work on every layer. On stock
+  +43-50% at 2K and +60-78% at 120K with the flag alone; the fork with it is at 91 / 99 tok/s
+  at 120K on UD-Q4_K_XL v3.1, about 3x the preset. Code quality unchanged over 12 seeds. The
+  shortlist patch does not work under it.
+- **Fork settings** (`docs/fork_grid.md`): a larger `-ub` does not fix its layer-split prefill;
+  its draft-vocabulary option is +5-13% at draft 3 under the layer split and nothing under the
+  tensor split; draft 3 is the best fixed length at 120K.
+
+**Next (2026-11-12):** a trial preset. Two candidates: stock + `-sm tensor` on the current file
+(a flag), and the fork + `-sm tensor` on UD-Q4_K_XL v3.1. Before either becomes the default:
+the full probe suite, a long agent session with context checkpoints, parallel slots, and the
+MoE presets under the tensor split.
 Candidates 1 and 3 below are kernel work the fork already covers; they are dropped unless a
 measurement on the fork shows a gap.
 

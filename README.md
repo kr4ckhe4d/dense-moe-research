@@ -273,12 +273,13 @@ benchmarks/gguf_mtp.sh 0 Q8_0 IQ4_XS && .venv/bin/python scripts/gguf_summary.py
 
 | Doc | Contents |
 |---|---|
-| [docs/findings.md](docs/findings.md) | All measured results (F0 to F18) |
+| [docs/findings.md](docs/findings.md) | All measured results (F0 to F19) |
 | [docs/writeup.md](docs/writeup.md) | Result summary and a runbook of every command run |
 | [docs/phase3_findings.md](docs/phase3_findings.md) | Phase 3: block granularity, TEAL/WINA/CATS predictors, MTP union, speed ceilings |
 | [docs/conclusions.md](docs/conclusions.md) | Closing summary: answers, what to run per GPU size, limits |
 | [docs/depth.md](docs/depth.md) | Decode speed at 2K-120K context: attention cost, q8_0 vs f16 KV, MTP at depth; attention kernel patches for small batches and q8_0 / q4_0 KV; MMVQ patch on b12164 |
 | [docs/prior_work.md](docs/prior_work.md) | Earlier papers, llama.cpp PRs and the RDNA fork that already had these methods (searched 2026-11-12) |
+| [docs/tensor_split.md](docs/tensor_split.md) | `-sm tensor` on two cards: +43-78% on stock llama.cpp, about 3x today's preset with the RDNA fork; code-quality check; what breaks |
 | [docs/fork_grid.md](docs/fork_grid.md) | Stock, this repo's patches and the RDNA fork side by side on the two-card preset, 2K and 120K, two quantizations |
 | [docs/lenient.md](docs/lenient.md) | Lenient draft acceptance: speed against the share of non-top tokens, code-quality check |
 | [docs/shortlist.md](docs/shortlist.md) | Where a decode step goes; a vocabulary shortlist for the MTP drafter, draft length and confidence cutoff |

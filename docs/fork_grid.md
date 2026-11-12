@@ -12,7 +12,10 @@ length its decode step is 10-12% shorter (62.7 against 69.7 ms at 120K, 52.6 aga
 ahead of the fork's draft 3 at 2K and behind it in three of four cells at 120K. Against stock,
 the fork gives +15-24% at 2K and +62-97% at 120K with the
 standard MTP drafter; its adaptive drafter gives +22-38% at 2K and is slower than the fixed
-draft at 120K. The fork prefills 12-23% slower than stock.
+draft at 120K. The fork prefills 12-23% slower than stock with the layer split.
+
+All of this is with the default layer split. With `-sm tensor` every build is far faster and
+the fork's prefill loss turns into a gain: `docs/tensor_split.md`.
 
 ## Setup
 
@@ -78,8 +81,8 @@ Decode tok/s as explain / code; ms per target evaluation is the mean of the two 
   477), and at depth each drafted token costs more than it returns, so it is 7-10% slower than
   the fork's fixed draft 3. This is the same effect as `docs/shortlist.md`'s draft 6 at depth.
 - **Prefill is slower on the fork:** 667 against 761 tok/s on Q6_K (-12%), 719 against 936 on
-  Q4_K_XL (-23%), at its defaults with `-ub 512`. Not investigated; the fork documents its own
-  prefill settings and none were tried.
+  Q4_K_XL (-23%), at its defaults with `-ub 512`. A larger `-ub` does not change it (below);
+  `-sm tensor` does (`docs/tensor_split.md`).
 - **Text.** At temperature 0 the stock builds agree on all four outputs. This repo's build
   differs from stock on one of four (Q6_K) and two of four (Q4_K_XL), the fork on three of
   four. The kernels sum in a different order, which moves near-ties; `docs/depth.md`
@@ -102,18 +105,56 @@ sampler with thinking off, UD-Q4_K_XL v3.1, both cards, 128K, the fork with its 
 No difference in code quality is shown (seeds range 30 to 46 on the fork, 31 to 44 on stock).
 The fork is +20% on this probe, and +35% against the preset's UD-Q6_K on stock (57.8).
 
+## Fork settings on UD-Q4_K_XL v3.1
+
+`benchmarks/grid_fork_tune.sh`, layer split, decode tok/s explain / code.
+
+Prefill to 120K, tok/s, by `-ub`:
+
+| `-ub` | stock | fork |
+|---:|---:|---:|
+| 512 | 936 | 719 |
+| 2048 | 688 | 723 |
+| 4096 | 657 | 691 |
+
+A larger batch does not close the fork's prefill gap. Stock is fastest at 512 and its VRAM
+grows from 26.6 to 41.6 GiB at 4096.
+
+Drafter:
+
+| Fork config | 2K | 16K | 32K | 64K | 120K |
+|---|---:|---:|---:|---:|---:|
+| draft 3 | 68.7 / 78.4 | 65.2 / 77.3 | 64.0 / 70.9 | 57.5 / 68.4 | 56.9 / 59.9 |
+| draft 3 + vocab 98K | 72.4 / 82.4 | 71.1 / 81.2 | 68.0 / 76.5 | 64.7 / 71.7 | 60.8 / 63.2 |
+| draft 4 | 75.9 / 89.0 | | | | 51.7 / 54.9 |
+| draft 4 + vocab 98K | 82.2 / 96.0 | 65.2 / 92.9 | 64.5 / 78.6 | 56.8 / 75.4 | 54.7 / 58.1 |
+| draft 4 + vocab 65K | 78.0 / 91.6 | | | | 53.9 / 58.8 |
+| adaptive, n-max 3 | 68.8 / 78.5 | | | | 57.0 / 59.9 |
+| adaptive, n-max 4 | 67.2 / 80.8 | | | | 53.7 / 58.7 |
+| adaptive, n-max 5 | 67.2 / 81.6 | | | | 53.4 / 58.4 |
+| adaptive, n-max 7 | 74.4 / 92.3 | 60.3 / 87.7 | 59.0 / 72.8 | 52.4 / 70.5 | 51.0 / 54.2 |
+| adaptive, n-max 7 + vocab 98K | 80.5 / 96.0 | 65.0 / 95.2 | 63.4 / 78.4 | 56.0 / 75.6 | 54.0 / 57.3 |
+| stock, draft 3 | 55.5 / 67.0 | 53.6 / 62.0 | 44.2 / 52.8 | 39.4 / 41.1 | 28.9 / 33.8 |
+
+- **The fork's draft-vocabulary option** (`--spec-draft-mtp-vocab 98304`: token ids below N,
+  not a frequency list) is worth +5-13% with draft 3 at every depth and +6-8% with draft 4. It
+  is the same saving as `docs/shortlist.md`. 65,536 is no better than 98,304.
+- **Draft 3 with the subset is the steadiest config:** best on the explain task from 16K up and
+  best on both tasks at 120K. Deeper drafts win on the code task up to 64K and lose on prose.
+- **Capping the adaptive drafter does not help at depth:** n-max 3 equals fixed draft 3, and
+  n-max 4 and 5 are 2-6% behind it at 120K.
+- Stock is down 25-35% by 64K; the fork about 12%.
+
 ## Limits
 
 - One run per cell, two tasks, 256 tokens: differences of 1-2 tok/s are not real.
-- The fork ran at its defaults apart from the drafter type. Its draft-vocabulary option
-  (`--spec-draft-mtp-vocab`), n-gram drafting, streamed KV and `-sm tensor` split were not
-  tried, so its rows are a floor for what it can do here.
+- The fork's n-gram drafting and streamed KV were not tried.
 - This repo's shortlist was not combined with the fork's kernels; the two are separate builds.
 - Only the 27B on two cards. No single-card, 9B or MoE rows.
 
 ## What this means for the repo
 
 The fork contains this repo's two kernel fixes in a faster form and is maintained. For daily
-use the fork is the build to run, not `patches/`. What remains this repo's own is the
+use the fork is the build to run, not `patches/`. With `-sm tensor` its lead grows (`docs/tensor_split.md`). What remains this repo's own is the
 measurement: the negative results on sparsity (F3, F5), the step-time split and the shortlist
 numbers, which the fork's own option could now be checked against.

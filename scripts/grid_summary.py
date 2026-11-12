@@ -38,7 +38,31 @@ def table(tag: str, title: str) -> None:
     print()
 
 
+def depth_table(fname: str, title: str, note: str) -> None:
+    """One row per config, decode tok/s explain / code at every depth it ran, ms per step at the deepest."""
+    by: dict[str, dict] = {}
+    for r in map(json.loads, (R / fname).read_text().splitlines()):
+        by.setdefault(r["config"]["name"], {})[(r["target_depth"], r["task"])] = r
+    depths = sorted({k[0] for d in by.values() for k in d})
+    print(f"## {title}\n\n{note}\n")
+    print("| config | " + " | ".join(f"{d // 1000}K" for d in depths) + " | ms at deepest | drafts at deepest | VRAM MiB |")
+    print("|---|" + "---:|" * (len(depths) + 3))
+    for name, d in by.items():
+        cells = [" / ".join(f"{d[(x, t)]['tg']:.1f}" for t in TASKS) if (x, "code") in d else "" for x in depths]
+        last = max(k[0] for k in d)
+        rows = [d[(last, t)] for t in TASKS]
+        print(f"| {name} | " + " | ".join(cells) + f" | {sum(r['step_ms'] for r in rows) / 2:.1f} | "
+              f"{sum(r['draft_accepted'] for r in rows)} / {sum(r['draft_n'] for r in rows)} | {rows[0]['vram_peak_mib']} |")
+    print()
+
+
 if __name__ == "__main__":
     print("# Stock, this repo's patches and the RDNA fork on the two-card preset\n")
     for tag, title in FILES.items():
         table(tag, title)
+    depth_table("fork_tune.jsonl", "Fork settings on UD-Q4_K_XL v3.1 (benchmarks/grid_fork_tune.sh)",
+                "Decode tok/s explain / code. `ubN` = `-ub N`; `tensor` = `-sm tensor`; `vocabNk` = the fork's "
+                "`--spec-draft-mtp-vocab`.")
+    depth_table("fork_mid.jsonl", "Layer split at 16K-64K, UD-Q4_K_XL v3.1", "Decode tok/s explain / code.")
+    depth_table("tensor.jsonl", "-sm tensor on every build (benchmarks/grid_tensor.sh)",
+                "Decode tok/s explain / code, draft 3 unless named.")
