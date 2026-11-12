@@ -57,10 +57,16 @@ Done (`docs/depth.md`, F10):
   its draft-vocabulary option is +5-13% at draft 3 under the layer split and nothing under the
   tensor split; draft 3 is the best fixed length at 120K.
 
-**Next (2026-11-12):** a trial preset. Two candidates: stock + `-sm tensor` on the current file
-(a flag), and the fork + `-sm tensor` on UD-Q4_K_XL v3.1. Before either becomes the default:
-the full probe suite, a long agent session with context checkpoints, parallel slots, and the
-MoE presets under the tensor split.
+- **Trial presets** (local-llm-benchmarks `r9700+rx9070.md`, "Trial presets"): two `-tensor`
+  presets beside the daily ones. Probe suite, a 118K ten-turn session (recall 8 of 8, cache
+  reused every turn) and two parallel slots all pass on stock and on the fork. The fork's 33 of 50
+  on the suite's code-quality run is one deterministic sample from its seed spread
+  (37.8 ± 4.7, same as stock). UD-Q6_K under the tensor split leaves 589 MiB on the
+  9070 XT at 128K; `-ts 2,3` leaves 3.4 GiB at 78.3 tok/s against 87.1.
+
+**Next (2026-11-12):** use the trial presets under a real agent harness for a working session,
+then the MoE presets and 256K under the tensor split. Thinking on was not tested with
+the fork or the tensor split.
 Candidates 1 and 3 below are kernel work the fork already covers; they are dropped unless a
 measurement on the fork shows a gap.
 

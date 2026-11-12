@@ -110,4 +110,16 @@ errors; the UD-Q6_K pair moves the other way by 1.9. Seeds range from 26 to 48.
   the text, and with it the accepted drafts, differ.
 - Two cards of different size and speed on an x8 link each. Other pairs will split differently.
 - The mode is experimental upstream. Only the 27B with MTP was run: no MoE model, no DFlash
-  drafter, no parallel slots, no long session with context checkpoints.
+  drafter.
+
+## Trial presets
+
+Two `-tensor` presets now sit beside the daily ones (local-llm-benchmarks `r9700+rx9070.md`,
+"Trial presets"). On stock with UD-Q6_K and on the fork with UD-Q4_K_XL v3.1: tool calling
+passes; a ten-turn session growing to 118K recalls 8 of 8 planted facts and re-evaluates only
+the new tokens each turn; two parallel slots give 132.5 and 206.9 tok/s in total against 85.5
+for today's preset. Two things to watch: the tensor split puts half the model on the 16 GB
+card (UD-Q6_K at 128K leaves 589 MiB there; `-ts 2,3` leaves 3.4 GiB at 78.3 tok/s against
+87.1), and the fork's temperature-0 suite run scored 33 of 50 on code quality. That run is
+one deterministic sample (it repeats exactly) from a spread of 37.8 ± 4.7 over 12 seeds,
+range 30 to 45, the same spread as stock with the layer split (38.4 ± 3.3).
