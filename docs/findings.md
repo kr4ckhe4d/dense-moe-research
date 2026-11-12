@@ -479,3 +479,23 @@ Full list with links: `docs/prior_work.md`. Searched after the work was done.
 - No measurement was found of training-free activation masks under an MTP verify batch (F5).
 - The fork's numbers come from other machines and builds; it has not been run here.
 
+## F18. The RDNA fork is faster than this repo's patches on this machine (2026-11-12)
+
+Full tables: `docs/fork_grid.md`. Two-card preset shape (128K, q8_0 KV, MTP), 27B, two tasks,
+256 tokens, one run per cell. Fork release v17-a691b2345-r265.
+
+| Build | UD-Q6_K 2K | UD-Q6_K 120K | UD-Q4_K_XL v3.1 2K | UD-Q4_K_XL v3.1 120K |
+|---|---:|---:|---:|---:|
+| stock b12164 | 51.1 / 59.5 | 28.1 / 32.0 | 55.5 / 67.0 | 28.9 / 33.8 |
+| this repo's patches, draft 3 | 53.5 / 62.0 | 40.3 / 50.1 | 57.3 / 70.2 | 50.7 / 54.1 |
+| this repo's patches + shortlist, draft 4 | 59.2 / 75.6 | 43.6 / 56.6 | 69.4 / 85.1 | 52.4 / 58.9 |
+| fork, draft 3 | 61.4 / 68.2 | 45.6 / 55.7 | 68.7 / 78.4 | 56.9 / 59.9 |
+| fork, adaptive drafter | 62.4 / 81.2 | 41.7 / 51.9 | 74.4 / 92.3 | 51.0 / 54.2 |
+
+- Decode tok/s, explain / code. Stock at the fork's base commit equals stock b12164.
+- Same draft length: the fork's step is 10-12% shorter than this repo's build (62.7 against
+  69.7 ms at 120K, 52.6 against 58.1 ms at 2K, UD-Q6_K).
+- The fork's adaptive drafter wins at 2K and loses 7-10% to its fixed draft 3 at 120K.
+- The fork's prefill to 120K is 12-23% slower than stock.
+- Code quality on the fork, UD-Q4_K_XL v3.1, 12 seeds: 37.1 ± 4.0 of 50 against 38.4 ± 3.3 on
+  stock.

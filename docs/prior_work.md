@@ -6,7 +6,8 @@ same model and the same GPUs. This page records what was found, so the other wri
 read as independent measurements and not as first results.
 
 The search was a web search of papers, llama.cpp pull requests and forks. The entries below
-are as their pages read on 2026-11-12. Nothing from them was run or compared here.
+are as their pages read on 2026-11-12. The RDNA fork was then run on this machine
+(`docs/fork_grid.md`); nothing else from the list was run or compared here.
 
 ## Summary
 
@@ -36,9 +37,9 @@ set of RDNA-specific llama.cpp patches. It was not known to this project until t
 - **Beyond this repo.** The fork also carries adaptive MTP draft depth, n-gram drafting combined
   with MTP, DFlash work and a draft-vocabulary option, none of which was built here.
 
-The numbers above come from other machines and builds and cannot be set against this repo's
-(44.8 tok/s at 120K with MTP and q8_0 KV on one R9700). A like-for-like run of the fork on this
-machine has not been done; it is the next step in `docs/roadmap.md`.
+The numbers above come from other machines and builds. The like-for-like run on this machine
+is in `docs/fork_grid.md`: on the two-card preset the fork's decode step is 10-12% shorter than
+this repo's build at the same draft length, at 2K and at 120K.
 
 ## The drafter shortlist
 
@@ -60,7 +61,7 @@ machine has not been done; it is the next step in `docs/roadmap.md`.
   verify batch needs 89-100% of the FFN (F5).
 - The quantization and speculative-decoding bar those are held against (F4, F6-F9).
 - Independent confirmation, on another build and machine, of the fork's two RDNA4 fixes and of
-  the shortlist papers.
+  the shortlist papers, and a side-by-side run of the fork (`docs/fork_grid.md`).
 
 ## Sources
 

@@ -44,9 +44,16 @@ Done (`docs/depth.md`, F10):
 - **Prior-work search** (`docs/prior_work.md`, F17): the two RDNA4 kernel fixes and the drafter
   shortlist had been shipped or proposed elsewhere first.
 
-**Next (2026-11-12):** run the current release of stew675/llama-cpp-rdna-boosts on this machine
-against stock and against this repo's patched build (same prompts, depths and the two-card daily
-preset), before any further kernel or drafting work. The candidates below are on hold until then.
+- **The fork against stock and this repo's build** (`docs/fork_grid.md`, F18). On the two-card
+  preset the fork's step is 10-12% shorter than this repo's build at the same draft length;
+  +15-24% over stock at 2K and +62-97% at 120K. Its adaptive drafter is the fastest at 2K and
+  slower than a fixed draft 3 at 120K. Its prefill is 12-23% slower than stock.
+
+**Next (2026-11-12):** decide whether the daily presets move to the fork (and to the v3.1
+UD-Q4_K_XL file). Open on the fork: its prefill loss, its own draft-vocabulary option against
+the shortlist numbers here, and a depth-aware choice between its adaptive and fixed drafters.
+Candidates 1 and 3 below are kernel work the fork already covers; they are dropped unless a
+measurement on the fork shows a gap.
 
 Candidates, in the order I would run them:
 
